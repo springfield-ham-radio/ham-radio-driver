@@ -1,0 +1,155 @@
+{
+  "radioModel": "baofeng-uv5r",
+  "serialConfig": {
+    "baudRate": 9600,
+    "dataBits": 8,
+    "stopBits": 1,
+    "parity": "none"
+  },
+  "memoryConfig": {
+    "chunkSize": 64,
+    "segments": {
+      "channels": {
+        "startAddress": 0,
+        "endAddress": 64,
+        "chunkSize": 64
+      },
+      "settings": {
+        "startAddress": 128,
+        "endAddress": 192,
+        "chunkSize": 64
+      }
+    }
+  },
+  "readMemory": [
+    {
+      "sendReceive": {
+        "send": [
+          80,
+          187,
+          255,
+          32,
+          18,
+          7,
+          37
+        ],
+        "receive": {
+          "type": "exact",
+          "value": 6,
+          "length": 1
+        },
+        "description": "Send magic number"
+      }
+    },
+    {
+      "sendReceive": {
+        "send": [
+          2
+        ],
+        "receive": {
+          "type": "variable",
+          "length": 8
+        },
+        "description": "Get radio identifier"
+      }
+    },
+    {
+      "sendReceive": {
+        "send": [
+          6
+        ],
+        "receive": {
+          "type": "exact",
+          "value": 6,
+          "length": 1
+        },
+        "description": "Begin clone operation"
+      }
+    },
+    {
+      "readSegment": {
+        "segments": [
+          "channels",
+          "settings"
+        ],
+        "startChunk": {
+          "send": [
+            "S",
+            "address",
+            "segment.chunkSize"
+          ],
+          "receive": {
+            "type": "pattern",
+            "pattern": [
+              "X",
+              {
+                "field": "address",
+                "size": 2
+              },
+              {
+                "field": "length",
+                "size": 1
+              },
+              {
+                "field": "data",
+                "size": 0
+              }
+            ]
+          }
+        },
+        "endChunk": {
+          "send": [
+            6
+          ],
+          "receive": {
+            "type": "exact",
+            "value": 6,
+            "length": 1
+          }
+        },
+        "description": "Read all memory segments (single chunk per segment)"
+      }
+    }
+  ],
+  "writeMemory": [
+    {
+      "sendReceive": {
+        "send": [
+          80,
+          187,
+          255,
+          32,
+          18,
+          7,
+          37
+        ],
+        "receive": {
+          "type": "exact",
+          "value": 6,
+          "length": 1
+        },
+        "description": "Send magic number"
+      }
+    },
+    {
+      "writeSegment": {
+        "segments": [
+          "channels",
+          "settings"
+        ],
+        "send": [
+          "X",
+          "segment.startAddress",
+          "segment.chunkSize"
+        ],
+        "data": "segment.data",
+        "receive": {
+          "type": "exact",
+          "value": 6,
+          "length": 1
+        },
+        "description": "Write all memory segments (single chunk per segment)"
+      }
+    }
+  ]
+}

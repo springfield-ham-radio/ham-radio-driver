@@ -18,8 +18,9 @@
     "lint:fix": "oxlint --fix --fix-suggestions",
     "release": "semantic-release",
     "prepare": "husky",
-    "test": "tsx --test test/**/*.test.ts",
-    "test:unit": "tsx --test test/unit/**/*.test.ts"
+    "test": "yarn test:unit && yarn test:integration",
+    "test:unit": "tsx --test test/unit/**/*.test.ts",
+    "test:integration": "tsx --test test/integration/**/*.test.ts"
   },
   "release": {
     "branches": [

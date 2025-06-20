@@ -3,13 +3,10 @@ import { expect } from 'chai';
 import type { RadioProgressIndicator, Radio } from '@springfield/ham-radio-api';
 import { RadioDriver, CancelledException } from '../../src/index.js';
 import { RadioModelId } from '@springfield/ham-radio-api';
+import { MockLogLayer } from 'loglayer';
 
 describe('RadioDriver', () => {
-  const mockLogger = {
-    debug: () => {},
-    withMetadata: () => mockLogger,
-    withError: () => mockLogger,
-  } as any; // Use any to avoid interface complexity for testing
+  const mockLogger = new MockLogLayer();
 
   const mockRadio: Radio = {
     id: {

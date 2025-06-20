@@ -22,43 +22,75 @@ yarn add @springfield/ham-radio-driver
 
 ```typescript
 import { RadioDriver } from '@springfield/ham-radio-driver';
-import type { RadioProgressIndicator } from '@springfield/ham-radio-api';
+import type { Radio, RadioProgressIndicator } from '@springfield/ham-radio-api';
+import { RadioModelId } from '@springfield/ham-radio-api';
 import { createLogger } from 'loglayer';
 
-// Define your radio protocol
-const protocol = {
-  radioModel: 'UV-5R',
+// Define your radio configuration
+const radio: Radio = {
+  id: {
+    model: RadioModelId('baofeng-uv5r'),
+    name: 'Baofeng UV-5R',
+    manufacturer: 'Baofeng',
+  },
+  settingsSchema: {
+    model: RadioModelId('baofeng-uv5r'),
+    settingsSchema: {},
+    channelSchema: {},
+  },
+  memoryConfig: {
+    chunkSize: 64,
+    segments: {
+      channels: {
+        startAddress: 0,
+        endAddress: 6143,
+      },
+      settings: {
+        startAddress: 7872,
+        endAddress: 8191,
+      },
+    },
+  },
   serialConfig: {
     baudRate: 9600,
     dataBits: 8,
     stopBits: 1,
-    parity: 'none'
-  },
-  memoryConfig: {
-    channels: {
-      startAddress: 0x0000,
-      endAddress: 0x1000,
-      chunkSize: 64
-    }
+    parity: 'none',
   },
   readMemory: [
     {
       sendReceive: {
-        send: [0x02, 0x00, 0x00],
+        send: [0x50, 0xbb, 0xff, 0x20, 0x12, 0x07, 0x25],
         receive: { type: 'exact', value: 0x06, length: 1 },
-        description: 'Send read command'
-      }
-    }
+        description: 'Send magic number',
+      },
+    },
+    {
+      readSegment: {
+        segments: ['channels', 'settings'],
+        startChunk: {
+          send: ['S', 'address', 'segment.chunkSize'],
+          receive: { type: 'pattern', pattern: ['X', 'address', 'length', 'data'], dataLength: 'segment.chunkSize' },
+        },
+        endChunk: {
+          send: [0x06],
+          receive: { type: 'exact', value: 0x06, length: 1 },
+        },
+        description: 'Read all memory segments',
+      },
+    },
   ],
   writeMemory: [
     {
-      sendReceive: {
-        send: [0x02, 0x01, 0x00],
+      writeSegment: {
+        segments: ['channels', 'settings'],
+        send: ['X', 'segment.startAddress', 'segment.chunkSize'],
+        data: 'segment.data',
         receive: { type: 'exact', value: 0x06, length: 1 },
-        description: 'Send write command'
-      }
-    }
-  ]
+        description: 'Write all memory segments',
+      },
+    },
+  ],
 };
 
 // Create a progress indicator for cancellation support
@@ -66,12 +98,12 @@ const progressIndicator: RadioProgressIndicator = {
   setValue: (value: number) => {
     console.log(`Progress: ${Math.round(value * 100)}%`);
   },
-  isCanceled: false
+  isCanceled: false,
 };
 
 // Create driver instance
 const logger = createLogger();
-const driver = new RadioDriver(protocol, logger);
+const driver = new RadioDriver(radio, logger);
 
 // Read radio memory
 const memoryData = await driver.readRadio('/dev/ttyUSB0', progressIndicator);
@@ -84,14 +116,37 @@ console.log(`Radio model: ${driver.getRadioModel()}`);
 console.log(`Memory segments: ${driver.getNumberMemorySegments()}`);
 ```
 
-## Protocol Definition
+## Radio Configuration
 
-The DSL uses a JSON-based configuration to define how to communicate with a radio. Here are the key components:
+The DSL uses a `Radio` interface to define how to communicate with a radio. Here are the key components:
+
+### Radio Interface
+
+```typescript
+interface Radio {
+  id: RadioId;
+  settingsSchema: RadioSchema;
+  memoryConfig: RadioMemoryConfig;
+  serialConfig: RadioSerialConfig;
+  readMemory: RadioProtocolStep[];
+  writeMemory: RadioProtocolStep[];
+}
+```
+
+### Radio ID
+
+```typescript
+interface RadioId {
+  model: RadioModelId;
+  name: string;
+  manufacturer: string;
+}
+```
 
 ### Serial Configuration
 
 ```typescript
-interface SerialConfig {
+interface RadioSerialConfig {
   baudRate: number;
   dataBits?: 8 | 5 | 6 | 7;
   stopBits?: 1 | 1.5 | 2;
@@ -102,12 +157,16 @@ interface SerialConfig {
 ### Memory Configuration
 
 ```typescript
-interface MemoryConfig {
-  [segmentName: string]: {
-    startAddress: number;
-    endAddress: number;
-    chunkSize: number;
+interface RadioMemoryConfig {
+  chunkSize: number;
+  segments: {
+    [segmentName: string]: RadioMemorySegment;
   };
+}
+
+interface RadioMemorySegment {
+  startAddress: number;
+  endAddress: number;
 }
 ```
 
@@ -133,13 +192,29 @@ The DSL supports several types of protocol steps:
 - **WriteSegment**: Write a memory segment with chunking
 - **SetVariable**: Set a variable for use in subsequent steps
 
+#### Receive Patterns
+
+```typescript
+// Exact pattern - expect specific value
+{ type: 'exact', value: 0x06, length: 1 }
+
+// Variable pattern - accept any data of specified length
+{ type: 'variable', length: 8 }
+
+// Pattern matching - expect specific data structure
+{ type: 'pattern', pattern: ['X', 'address', 'length', 'data'], dataLength: 'segment.chunkSize' }
+
+// Any pattern - accept any data of specified length
+{ type: 'any', length: 64 }
+```
+
 ## API Reference
 
 ### RadioDriver Class
 
 #### Constructor
 ```typescript
-constructor(protocol: RadioProtocol, logger: ILogLayer)
+constructor(radio: Radio, logger: ILogLayer)
 ```
 
 #### Methods
@@ -160,13 +235,13 @@ Writes radio memory from a `Uint8Array`.
 ```typescript
 getRadioModel(): string
 ```
-Returns the radio model name from the protocol configuration.
+Returns the radio model name from the radio configuration.
 
 ##### getNumberMemorySegments
 ```typescript
 getNumberMemorySegments(): number
 ```
-Returns the total number of memory segments defined in the protocol.
+Returns the total number of memory segments defined in the radio configuration.
 
 ## Examples
 

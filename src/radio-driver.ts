@@ -166,7 +166,7 @@ export class RadioDriver {
   private async connectToRadio(serialPortPath: string): Promise<SerialPort> {
     const { baudRate, dataBits = 8, stopBits = 1, parity = 'none' } = this.radio.serialConfig;
 
-    const port = new SerialPort({
+    const port = this.createSerialPort({
       baudRate,
       dataBits,
       parity,
@@ -185,6 +185,17 @@ export class RadioDriver {
         reject(error);
       });
     });
+  }
+
+  /**
+   * Creates a SerialPort instance. This method can be overridden in tests
+   * to provide mock implementations.
+   *
+   * @param options - SerialPort configuration options
+   * @returns A new SerialPort instance
+   */
+  protected createSerialPort(options: any): SerialPort {
+    return new SerialPort(options);
   }
 
   /**
