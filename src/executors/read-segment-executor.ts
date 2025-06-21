@@ -86,6 +86,16 @@ export class ReadSegmentExecutor implements StepExecutor {
       throw new Error(`Invalid bufferOffset: expected number, got ${typeof context.bufferOffset}`);
     }
 
+    // Accumulate chunk logs from all segments
+    const allChunkLogs: Array<{
+      segmentName: string;
+      address: number;
+      startSent: number[];
+      startReceived: number[];
+      endSent: number[];
+      endReceived: number[];
+    }> = [];
+
     for (const segmentName of segmentNames) {
       // Check for cancellation before processing each segment
       if (context.progressIndicator?.isCanceled) {
@@ -106,9 +116,20 @@ export class ReadSegmentExecutor implements StepExecutor {
 
       const segmentData = await this.readSegmentData({ context, endChunk, segmentConfig, startChunk });
 
+      // Get the chunk logs for this segment and add segment name
+      const segmentChunkLogs = context.variables.get('lastReadSegmentChunks') || [];
+      const segmentChunkLogsWithName = segmentChunkLogs.map((chunk: any) => ({
+        ...chunk,
+        segmentName,
+      }));
+      allChunkLogs.push(...segmentChunkLogsWithName);
+
       context.memoryBuffer.set(segmentData, context.bufferOffset);
       context.bufferOffset += segmentData.length;
     }
+
+    // Store all chunk logs from all segments for UI logging
+    context.variables.set('lastReadSegmentChunks', allChunkLogs);
   }
 
   /**
@@ -128,29 +149,64 @@ export class ReadSegmentExecutor implements StepExecutor {
   private async readSegmentData(params: { context: ProtocolContext; endChunk: any; segmentConfig: RadioMemorySegment; startChunk: any }): Promise<Uint8Array> {
     const { endAddress, startAddress } = params.segmentConfig;
     const chunkSize = params.context.memoryConfig.chunkSize;
-    const totalSize = endAddress - startAddress;
+    const totalSize = endAddress - startAddress + 1;
     const data = new Uint8Array(totalSize);
     let offset = 0;
 
-    for (let address = startAddress; address < endAddress; address += chunkSize) {
-      // Check for cancellation before processing each chunk
+    // Build an array of chunk log entries for UI logging
+    const chunkLogs: Array<{
+      address: number;
+      startSent: number[];
+      startReceived: number[];
+      endSent: number[];
+      endReceived: number[];
+    }> = [];
+
+    for (let address = startAddress; address <= endAddress; address += chunkSize) {
       if (params.context.progressIndicator?.isCanceled) {
         throw new CancelledException('Radio read was cancelled');
       }
 
       params.context.currentSegment!.currentAddress = address;
 
-      // Send start chunk command and get response
-      const receivedData = await executeSendReceive(params.startChunk, params.context);
+      // --- Start chunk ---
+      await executeSendReceive(params.startChunk, params.context);
+      const startSent = params.context.variables.get('lastSentData');
+      const startReceived = params.context.variables.get('lastReceivedData');
 
       // Extract data from response
-      const chunkData = extractDataFromResponse(receivedData, params.startChunk.receive);
+      const chunkData = extractDataFromResponse(startReceived, params.startChunk.receive);
+      const remaining = endAddress - address + 1;
+      const expectedChunkLength = Math.min(chunkSize, remaining);
+      if (chunkData.length > expectedChunkLength) {
+        throw new RangeError(
+          `ReadSegmentExecutor: Chunk data too large. address=${address}, offset=${offset}, chunkData.length=${chunkData.length}, expectedChunkLength=${expectedChunkLength}, data.length=${data.length}, startAddress=${startAddress}, endAddress=${endAddress}, chunkSize=${chunkSize}`
+        );
+      }
+      if (offset + chunkData.length > data.length) {
+        throw new RangeError(
+          `ReadSegmentExecutor: Attempt to write beyond buffer bounds. address=${address}, offset=${offset}, chunkData.length=${chunkData.length}, data.length=${data.length}, startAddress=${startAddress}, endAddress=${endAddress}, chunkSize=${chunkSize}`
+        );
+      }
       data.set(chunkData, offset);
       offset += chunkData.length;
 
-      // Send end chunk acknowledgment
+      // --- End chunk ---
       await executeSendReceive(params.endChunk, params.context);
+      const endSent = params.context.variables.get('lastSentData');
+      const endReceived = params.context.variables.get('lastReceivedData');
+
+      chunkLogs.push({
+        address,
+        startSent: Array.from(startSent || []),
+        startReceived: Array.from(startReceived || []),
+        endSent: Array.from(endSent || []),
+        endReceived: Array.from(endReceived || []),
+      });
     }
+
+    // Store the chunk log array in context for UI logging
+    params.context.variables.set('lastReadSegmentChunks', chunkLogs);
 
     return data;
   }

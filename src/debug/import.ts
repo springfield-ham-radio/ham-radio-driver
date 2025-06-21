@@ -5,6 +5,7 @@ import { ConsoleTransport, LogLayer } from 'loglayer';
 import type { Radio, RadioProgressIndicator } from '@springfield/ham-radio-api';
 import { SerialPort } from 'serialport';
 import fs from 'node:fs';
+import { createUILoggerWithCallback } from '../utils/ui-logger-factory.js';
 
 const logger = new LogLayer({
   transport: new ConsoleTransport({
@@ -13,6 +14,14 @@ const logger = new LogLayer({
 });
 
 logger.setLevel('debug');
+
+// Array to capture all UI log entries
+const uiLogEntries: any[] = [];
+
+// UI logger that pushes log entries to the array
+const uiLogger = createUILoggerWithCallback((entry) => {
+  uiLogEntries.push(entry);
+});
 
 class ConsoleProgressIndicator implements RadioProgressIndicator {
   setValue(value: number): void {
@@ -65,7 +74,7 @@ const test = async () => {
   logger.withMetadata({ serialPortPath, configFile }).info('Loading radio configuration');
 
   const radioConfig = loadRadioConfig(configFile);
-  const radioDriver = new RadioDriver(radioConfig, logger);
+  const radioDriver = new RadioDriver(radioConfig, logger, uiLogger);
 
   logger.info(`Radio model: ${radioDriver.getRadioModel()}`);
   logger.info(`Memory segments: ${radioDriver.getNumberMemorySegments()}`);
@@ -101,6 +110,11 @@ const test = async () => {
     .map(byte => byte.toString(16).padStart(2, '0'))
     .join(' ');
   logger.info(`First 64 bytes: ${preview}`);
+
+  // Write the UI log entries to a file
+  const uiLogFile = `ui-log-${Date.now()}.json`;
+  fs.writeFileSync(uiLogFile, JSON.stringify(uiLogEntries, null, 2));
+  logger.info(`UI log saved to ${uiLogFile}`);
 };
 
 test().catch((error) => {

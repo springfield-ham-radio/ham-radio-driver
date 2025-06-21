@@ -188,12 +188,18 @@ export class SendReceiveOperation extends ProtocolOperationTemplate {
    *
    * @param data - The raw data received from the radio device
    * @param config - The operation configuration
-   * @param _context - The protocol context (unused in this implementation)
+   * @param context - The protocol context
    * @returns The extracted data from the response
    * @throws Error if the received data doesn't match the expected pattern
    */
   protected handleData(data: Buffer, config: any, context: ProtocolContext): Uint8Array {
     context.logger.debug(`Received data: ${data.toString('hex')}`);
+
+    // Store the received data in context variables for UI logging
+    const receivedData = new Uint8Array(data);
+    context.variables.set('lastReceivedData', receivedData);
+    context.variables.set('lastReceivedDataBuffer', data);
+
     const validator = ReceivePatternValidatorFactory.getValidator(config.receive);
 
     if (validator.validate(data, config.receive)) {
@@ -222,6 +228,10 @@ export class SendReceiveOperation extends ProtocolOperationTemplate {
   protected sendData(config: any, context: ProtocolContext): void {
     const sendData = resolveExpressions(config.send, context);
     const sendDataArray = new Uint8Array(sendData.map(val => typeof val === 'number' ? val : val.charCodeAt(0)));
+
+    // Store the sent data in context variables for UI logging
+    context.variables.set('lastSentData', sendDataArray);
+
     context.logger.debug(`Sending data: ${Buffer.from(sendDataArray).toString('hex')}`);
     context.port.write(sendDataArray);
   }

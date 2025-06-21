@@ -97,7 +97,25 @@ export class ProtocolInterpreter {
         throw new CancelledException('Protocol execution was cancelled');
       }
 
-      await this.executorRegistry.executeStep(step, this.context);
+      // Start UI logging for this command if UI logger is available
+      if (this.context.uiLogger) {
+        this.context.uiLogger.startCommand(i, steps.length, operation, step);
+      }
+
+      try {
+        await this.executorRegistry.executeStep(step, this.context);
+
+        // Log successful command completion if UI logger is available
+        if (this.context.uiLogger) {
+          this.context.uiLogger.logCommandSuccess(i, steps.length, operation, step, this.context);
+        }
+      } catch (error) {
+        // Log command failure if UI logger is available
+        if (this.context.uiLogger) {
+          this.context.uiLogger.logCommandFailure(i, steps.length, operation, step, error as Error, this.context);
+        }
+        throw error;
+      }
 
       // Update progress after each step
       if (this.context.progressIndicator) {

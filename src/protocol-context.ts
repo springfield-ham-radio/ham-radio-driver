@@ -1,5 +1,6 @@
 import type { SerialPort } from "serialport";
 import type { RadioProgressIndicator, RadioMemoryConfig, RadioMemorySegment } from "@springfield/ham-radio-api";
+import type { UILogger } from "./utils/ui-logger.js";
 
 /**
  * Protocol context for execution of radio communication protocols.
@@ -88,6 +89,15 @@ export interface ProtocolContext {
    * for consistent logging behavior.
    */
   logger: any; // ILogLayer type
+
+  /**
+   * UI Logger instance for command-level logging.
+   *
+   * Used to capture command-level information for display in the UI. This
+   * logger provides structured JSON logging that can be easily parsed and
+   * displayed in user interfaces for protocol debugging.
+   */
+  uiLogger?: UILogger;
 
   /**
    * Buffer for read/write operations on radio memory.

@@ -72,6 +72,11 @@ export class SendExecutor implements StepExecutor {
     }
 
     const sendData = resolveExpressions(data, context);
-    context.port.write(sendData);
+    const sendDataArray = new Uint8Array(sendData.map(val => typeof val === 'number' ? val : val.charCodeAt(0)));
+
+    // Store the sent data in context for UI logging
+    context.variables.set('lastSentData', sendDataArray);
+
+    context.port.write(sendDataArray);
   }
 }

@@ -76,8 +76,12 @@ export class ReceiveExecutor implements StepExecutor {
 
       parser.on('data', (data: Buffer) => {
         parser.removeAllListeners();
-        // Store the received data in a variable for potential use by other steps
-        context.variables.set('lastReceivedData', new Uint8Array(data));
+        const receivedData = new Uint8Array(data);
+
+        // Store the received data in context variables for use by other steps and UI logging
+        context.variables.set('lastReceivedData', receivedData);
+        context.variables.set('lastReceivedDataBuffer', data);
+
         resolve();
       });
 

@@ -2,6 +2,7 @@ import type { ILogLayer } from 'loglayer';
 import type { RadioProgressIndicator, Radio } from '@springfield/ham-radio-api';
 import { ProtocolInterpreter } from './protocol-interpreter.js';
 import { SerialPort } from 'serialport';
+import type { UILogger } from './utils/ui-logger.js';
 
 /**
  * RadioDriver provides high-level operations for reading and writing radio memory
@@ -27,6 +28,7 @@ import { SerialPort } from 'serialport';
 export class RadioDriver {
   private radio: Radio;
   private logger: ILogLayer;
+  private uiLogger?: UILogger;
 
   /**
    * Creates a new RadioDriver instance for the specified radio model.
@@ -34,15 +36,22 @@ export class RadioDriver {
    * @param radio - The radio configuration containing protocol definitions,
    *               memory layout, and serial communication settings
    * @param logger - Logger instance for debug and error logging
+   * @param uiLogger - Optional UI logger instance for command-level logging
+   *                  for display in user interfaces
    *
    * @example
    * ```typescript
    * const driver = new RadioDriver(baofengUV5RConfig, logger);
+   *
+   * // With UI logger for UI display
+   * const uiLogger = createUILogger();
+   * const driver = new RadioDriver(baofengUV5RConfig, logger, uiLogger);
    * ```
    */
-  constructor(radio: Radio, logger: ILogLayer) {
+  constructor(radio: Radio, logger: ILogLayer, uiLogger?: UILogger) {
     this.radio = radio;
     this.logger = logger;
+    this.uiLogger = uiLogger;
   }
 
   /**
@@ -222,7 +231,7 @@ export class RadioDriver {
    */
   private async readRadioMemory(port: SerialPort, progressIndicator: RadioProgressIndicator): Promise<Uint8Array> {
     // Calculate total memory size from memoryConfig
-    const totalSize = Object.values(this.radio.memoryConfig.segments).reduce((sum: number, seg) => sum + (seg.endAddress - seg.startAddress), 0);
+    const totalSize = Object.values(this.radio.memoryConfig.segments).reduce((sum: number, seg) => sum + (seg.endAddress - seg.startAddress + 1), 0);
     const buffer = new Uint8Array(totalSize);
 
     const context = {
@@ -233,6 +242,7 @@ export class RadioDriver {
       port,
       variables: new Map<string, any>(),
       progressIndicator,
+      uiLogger: this.uiLogger,
     };
 
     const interpreter = new ProtocolInterpreter(context);
@@ -271,6 +281,7 @@ export class RadioDriver {
       port,
       variables: new Map<string, any>(),
       progressIndicator,
+      uiLogger: this.uiLogger,
     };
 
     const interpreter = new ProtocolInterpreter(context);
