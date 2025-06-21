@@ -14,6 +14,7 @@ import { ExpressionResolverFactory } from "./expression-resolvers.js";
  * - Handles both single expressions and arrays of expressions
  * - Integrates with the ExpressionResolverFactory for complex resolution
  * - Supports context variable references and character code conversions
+ * - Supports multi-byte expressions for addresses and other multi-byte values
  *
  * Design Rationale:
  * - Expression resolution allows protocols to be dynamic and context-aware
@@ -21,12 +22,63 @@ import { ExpressionResolverFactory } from "./expression-resolvers.js";
  * - Array support enables batch processing of multiple expressions
  * - Integration with ExpressionResolverFactory provides extensible resolution
  * - Type safety ensures expressions resolve to appropriate value types
+ * - Multi-byte support enables proper handling of addresses and other multi-byte values
  *
  * Usage:
  * These utilities are used by protocol executors to resolve dynamic values
  * in protocol steps, such as addresses, data lengths, and character codes
  * that depend on the current execution context.
  */
+
+/**
+ * Expands multi-byte expressions into arrays of bytes.
+ *
+ * This function handles expressions in the format "expression:size" where
+ * expression is a value that should be converted to multiple bytes and
+ * size is the number of bytes to use.
+ *
+ * @param expressions - Array of expressions to expand
+ * @param context - The protocol context containing state and variables
+ * @returns Array of resolved values with multi-byte expressions expanded
+ *
+ * Example:
+ * ```typescript
+ * const expanded = expandMultiByteExpressions(['S', 'address:2', 64], context);
+ * // Returns: ['S', highByte, lowByte, 64] for address 0x1000
+ * ```
+ */
+export const expandMultiByteExpressions = (expressions: (string | number)[], context: ProtocolContext): (string | number)[] => {
+  const result: (string | number)[] = [];
+
+  for (const expr of expressions) {
+    if (typeof expr === 'string' && expr.includes(':')) {
+      // This is a multi-byte expression
+      const [valueExpr, sizeStr] = expr.split(':');
+      const size = parseInt(sizeStr, 10);
+
+      if (isNaN(size) || size <= 0) {
+        throw new Error(`Invalid multi-byte size: ${sizeStr}`);
+      }
+
+      // Resolve the value expression first
+      const value = ExpressionResolverFactory.resolve(valueExpr, context);
+
+      if (typeof value !== 'number') {
+        throw new Error(`Multi-byte expression requires a numeric value, got: ${typeof value}`);
+      }
+
+      // Convert the number to bytes in little-endian format
+      for (let i = 0; i < size; i++) {
+        result.push((value >> (i * 8)) & 0xFF);
+      }
+    } else {
+      // Regular expression, resolve normally
+      result.push(resolveExpression(expr, context));
+    }
+  }
+
+  return result;
+};
 
 /**
  * Resolves an array of expressions to their actual values.
@@ -46,7 +98,7 @@ import { ExpressionResolverFactory } from "./expression-resolvers.js";
  * ```
  */
 export const resolveExpressions = (expressions: (string | number)[], context: ProtocolContext): (string | number)[] => {
-  return expressions.map((expr) => resolveExpression(expr, context));
+  return expandMultiByteExpressions(expressions, context);
 };
 
 /**

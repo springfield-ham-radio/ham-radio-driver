@@ -309,8 +309,15 @@ describe('protocol-operations', () => {
 
     describe('sendData()', () => {
       it('should resolve expressions and write to port', () => {
+        // Set up a known current address for the mock context
+        mockContext.currentSegment = {
+          name: 'test',
+          config: { startAddress: 0, endAddress: 0 },
+          currentAddress: 4096, // 0x1000
+        };
+
         const config = {
-          send: [0x01, 'address', "'A'"],
+          send: [0x01, 'address:2', "'A'"],
           receive: { type: 'exact', value: 0x06 } as RadioReceivePattern
         };
 
@@ -321,7 +328,8 @@ describe('protocol-operations', () => {
 
         operation['sendData'](config, mockContext);
 
-        expect(writtenData).to.deep.equal([1, 0x1000, 65]);
+        // 4096 = 0x1000, so bytes are 0x00, 0x10 (little-endian)
+        expect(writtenData).to.deep.equal(new Uint8Array([1, 0, 16, 65]));
       });
 
       it('should handle simple numeric data', () => {
@@ -337,7 +345,7 @@ describe('protocol-operations', () => {
 
         operation['sendData'](config, mockContext);
 
-        expect(writtenData).to.deep.equal([1, 2, 3]);
+        expect(writtenData).to.deep.equal(new Uint8Array([1, 2, 3]));
       });
     });
   });

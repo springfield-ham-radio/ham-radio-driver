@@ -192,7 +192,8 @@ export class SendReceiveOperation extends ProtocolOperationTemplate {
    * @returns The extracted data from the response
    * @throws Error if the received data doesn't match the expected pattern
    */
-  protected handleData(data: Buffer, config: any, _context: ProtocolContext): Uint8Array {
+  protected handleData(data: Buffer, config: any, context: ProtocolContext): Uint8Array {
+    context.logger.debug(`Received data: ${data.toString('hex')}`);
     const validator = ReceivePatternValidatorFactory.getValidator(config.receive);
 
     if (validator.validate(data, config.receive)) {
@@ -220,6 +221,8 @@ export class SendReceiveOperation extends ProtocolOperationTemplate {
    */
   protected sendData(config: any, context: ProtocolContext): void {
     const sendData = resolveExpressions(config.send, context);
-    context.port.write(sendData);
+    const sendDataArray = new Uint8Array(sendData.map(val => typeof val === 'number' ? val : val.charCodeAt(0)));
+    context.logger.debug(`Sending data: ${Buffer.from(sendDataArray).toString('hex')}`);
+    context.port.write(sendDataArray);
   }
 }

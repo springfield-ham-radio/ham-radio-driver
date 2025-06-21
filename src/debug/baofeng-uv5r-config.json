@@ -1,5 +1,14 @@
 {
-  "radioModel": "baofeng-uv5r",
+  "id": {
+    "model": "baofeng-uv5r",
+    "name": "Baofeng UV-5R",
+    "manufacturer": "Baofeng"
+  },
+  "settingsSchema": {
+    "model": "baofeng-uv5r",
+    "settingsSchema": {},
+    "channelSchema": {}
+  },
   "serialConfig": {
     "baudRate": 9600,
     "dataBits": 8,
@@ -11,28 +20,18 @@
     "segments": {
       "channels": {
         "startAddress": 0,
-        "endAddress": 64,
-        "chunkSize": 64
+        "endAddress": 6143
       },
       "settings": {
-        "startAddress": 128,
-        "endAddress": 192,
-        "chunkSize": 64
+        "startAddress": 7872,
+        "endAddress": 8191
       }
     }
   },
   "readMemory": [
     {
       "sendReceive": {
-        "send": [
-          80,
-          187,
-          255,
-          32,
-          18,
-          7,
-          37
-        ],
+        "send": [80, 187, 255, 32, 18, 7, 37],
         "receive": {
           "type": "exact",
           "value": 6,
@@ -43,9 +42,7 @@
     },
     {
       "sendReceive": {
-        "send": [
-          2
-        ],
+        "send": [2],
         "receive": {
           "type": "variable",
           "length": 8
@@ -55,9 +52,7 @@
     },
     {
       "sendReceive": {
-        "send": [
-          6
-        ],
+        "send": [6],
         "receive": {
           "type": "exact",
           "value": 6,
@@ -68,16 +63,9 @@
     },
     {
       "readSegment": {
-        "segments": [
-          "channels",
-          "settings"
-        ],
+        "segments": ["channels", "settings"],
         "startChunk": {
-          "send": [
-            "S",
-            "address:2",
-            "segment.chunkSize"
-          ],
+          "send": ["S", "address:2", "segment.chunkSize"],
           "receive": {
             "type": "pattern",
             "pattern": [
@@ -98,9 +86,7 @@
           }
         },
         "endChunk": {
-          "send": [
-            6
-          ],
+          "send": [6],
           "receive": {
             "type": "exact",
             "value": 6,
@@ -114,15 +100,7 @@
   "writeMemory": [
     {
       "sendReceive": {
-        "send": [
-          80,
-          187,
-          255,
-          32,
-          18,
-          7,
-          37
-        ],
+        "send": [80, 187, 255, 32, 18, 7, 37],
         "receive": {
           "type": "exact",
           "value": 6,
@@ -133,15 +111,8 @@
     },
     {
       "writeSegment": {
-        "segments": [
-          "channels",
-          "settings"
-        ],
-        "send": [
-          "X",
-          "segment.startAddress:2",
-          "segment.chunkSize"
-        ],
+        "segments": ["channels", "settings"],
+        "send": ["X", "segment.startAddress:2", "segment.chunkSize"],
         "data": "segment.data",
         "receive": {
           "type": "exact",

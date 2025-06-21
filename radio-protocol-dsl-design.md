@@ -93,7 +93,7 @@ Each step in the protocol is defined as an object with a single key representing
   "readSegment": {
     "segments": ["channels", "settings"],
     "startChunk": {
-      "send": ["S", "address", "segment.chunkSize"],
+      "send": ["S", "address:2", "segment.chunkSize"],
       "receive": {
         "type": "pattern",
         "pattern": [
@@ -101,8 +101,7 @@ Each step in the protocol is defined as an object with a single key representing
           { "field": "address", "size": 2 },  // Address (high + low) - 2 bytes
           { "field": "length", "size": 1 },   // Length - 1 byte
           { "field": "data", "size": 0 }      // Data (variable size) - rest of response
-        ],
-        "dataLength": "segment.chunkSize"
+        ]
       }
     },
     "endChunk": {
@@ -124,7 +123,7 @@ Each step in the protocol is defined as an object with a single key representing
 {
   "writeSegment": {
     "segments": ["channels", "settings"],
-    "send": ["X", "segment.startAddress", "segment.chunkSize"],
+    "send": ["X", "segment.startAddress:2", "segment.chunkSize"],
     "data": "segment.data",
     "receive": {
       "type": "exact",
@@ -204,7 +203,7 @@ Each step in the protocol is defined as an object with a single key representing
       "readSegment": {
         "segments": ["channels", "settings"],
         "startChunk": {
-          "send": ["S", "address", "segment.chunkSize"],
+          "send": ["S", "address:2", "segment.chunkSize"],
           "receive": {
             "type": "pattern",
             "pattern": [
@@ -212,8 +211,7 @@ Each step in the protocol is defined as an object with a single key representing
               { "field": "address", "size": 2 },  // Address (high + low) - 2 bytes
               { "field": "length", "size": 1 },   // Length - 1 byte
               { "field": "data", "size": 0 }      // Data (variable size) - rest of response
-            ],
-            "dataLength": "segment.chunkSize"
+            ]
           }
         },
         "endChunk": {
@@ -249,7 +247,7 @@ Each step in the protocol is defined as an object with a single key representing
     {
       "writeSegment": {
         "segments": ["channels", "settings"],
-        "send": ["X", "segment.startAddress", "segment.chunkSize"],
+        "send": ["X", "segment.startAddress:2", "segment.chunkSize"],
         "data": "segment.data",
         "receive": {
           "type": "exact",
@@ -280,6 +278,14 @@ Each step in the protocol is defined as an object with a single key representing
 - **Bitwise**: `"address >> 8"`, `"address & 0xff"`
 - **Comparison**: `"address > 0x17ff"`
 - **Logical**: `"condition1 && condition2"`
+
+### Multi-Byte Expressions
+- **Format**: `"expression:size"` where `expression` is resolved to a number and `size` is the number of bytes
+- **Byte Order**: Little-endian (least significant byte first)
+- **Examples**:
+  - `"address:2"` - Converts address to 2 bytes (e.g., 0x1000 becomes [0x00, 0x10])
+  - `"segment.startAddress:3"` - Converts start address to 3 bytes
+  - `"0x12345678:4"` - Converts literal value to 4 bytes
 
 ### Special Values
 - **Dynamic**: `"address"` (current address being processed, automatically formatted as needed)
@@ -371,6 +377,34 @@ The new placeholder format with variable sizes provides several advantages:
 
 The old format assumed all placeholders were 1 byte each, which was too restrictive for different radio protocols.
 
+## Multi-Byte Expression Format
+
+The DSL now supports multi-byte expressions using the `expression:size` format. This allows for proper handling of addresses and other multi-byte values in radio protocols.
+
+### Format Specification
+- **Syntax**: `"expression:size"` where:
+  - `expression` is any valid expression that resolves to a number
+  - `size` is the number of bytes to use (1, 2, 3, 4, etc.)
+- **Byte Order**: Little-endian (least significant byte first)
+- **Examples**:
+  - `"address:2"` - Current address as 2 bytes
+  - `"segment.startAddress:3"` - Segment start address as 3 bytes
+  - `"0x12345678:4"` - Literal value as 4 bytes
+
+### Use Cases
+1. **Address Transmission**: Many radio protocols require addresses to be sent as 2 or 3 bytes
+2. **Length Fields**: Some protocols use multi-byte length fields
+3. **Extended Values**: Large numeric values that exceed single-byte range
+
+### Example Usage
+```json
+{
+  "send": ["S", "address:2", "segment.chunkSize"]
+}
+```
+
+For address `0x1000`, this resolves to: `["S", 0x00, 0x10, 64]`
+
 ## Implementation Architecture
 
 ### 1. Protocol Interpreter
@@ -451,6 +485,7 @@ The `writeSegment` command handles:
 7. **Simplified**: No explicit loop constructs needed - commands handle iteration internally
 8. **Generic Patterns**: Variable-sized placeholders support any radio protocol format
 9. **Flexible**: Each protocol can define its own response structure with explicit sizes
+10. **Multi-Byte Support**: Proper handling of addresses and other multi-byte values with explicit byte counts
 
 ## Migration Strategy
 

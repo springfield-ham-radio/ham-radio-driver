@@ -208,12 +208,12 @@ class TestableRadioDriver extends RadioDriver {
 // Create baofeng-uv5r radio configuration from the JSON
 const baofengUV5RRadio: Radio = {
   id: {
-    model: RadioModelId('baofeng-uv5r'),
+    model: 'baofeng-uv5r' as RadioModelId,
     name: 'Baofeng UV-5R',
     manufacturer: 'Baofeng',
   },
   settingsSchema: {
-    model: RadioModelId('baofeng-uv5r'),
+    model: 'baofeng-uv5r' as RadioModelId,
     settingsSchema: {},
     channelSchema: {},
   },
@@ -228,11 +228,11 @@ const baofengUV5RRadio: Radio = {
     segments: {
       channels: {
         startAddress: 0,
-        endAddress: 6143,
+        endAddress: 64,
       },
       settings: {
-        startAddress: 7872,
-        endAddress: 8191,
+        startAddress: 128,
+        endAddress: 192,
       },
     },
   },
@@ -273,7 +273,7 @@ const baofengUV5RRadio: Radio = {
       readSegment: {
         segments: ['channels', 'settings'],
         startChunk: {
-          send: ['S', 'address', 'segment.chunkSize'],
+          send: ['S', 'address:2', 'segment.chunkSize'],
           receive: {
             type: 'pattern',
             pattern: [
@@ -320,7 +320,7 @@ const baofengUV5RRadio: Radio = {
     {
       writeSegment: {
         segments: ['channels', 'settings'],
-        send: ['X', 'segment.startAddress', 'segment.chunkSize'],
+        send: ['X', 'segment.startAddress:2', 'segment.chunkSize'],
         data: 'segment.data',
         receive: {
           type: 'exact',
