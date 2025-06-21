@@ -152,9 +152,9 @@ class MockSerialPort extends EventEmitter {
   }
 
   private isStartChunk(data: Buffer): boolean {
-    // Protocol sends: address (2 bytes) + chunkSize (1 byte) = 3 bytes
+    // Protocol sends: 'S' (1 byte) + address (2 bytes) + chunkSize (1 byte) = 4 bytes
     // This is a read chunk request
-    if (data.length === 3 && data[2] === 64) {
+    if (data.length === 4 && data[0] === 0x53 && data[3] === 64) { // 0x53 = 'S'
       this.currentOperation = 'read';
       return true;
     }
@@ -167,9 +167,9 @@ class MockSerialPort extends EventEmitter {
   }
 
   private isWriteSegment(data: Buffer): boolean {
-    // Protocol sends: address (2 bytes) + chunkSize (1 byte) = 3 bytes
+    // Protocol sends: 'X' (1 byte) + address (2 bytes) + chunkSize (1 byte) = 4 bytes
     // This is a write chunk request
-    if (data.length === 3 && data[2] === 64) {
+    if (data.length === 4 && data[0] === 0x58 && data[3] === 64) { // 0x58 = 'X'
       this.currentOperation = 'write';
       return true;
     }
@@ -368,10 +368,8 @@ describe('RadioDriver Integration Tests', () => {
       const driver = new TestableRadioDriver(baofengUV5RRadio, mockLogger, MockSerialPort);
       const serialPortPath = '/dev/ttyUSB0';
 
-      // Cancel the operation after a short delay
-      setTimeout(() => {
-        progressIndicator.isCanceled = true;
-      }, 10);
+      // Cancel the operation immediately
+      progressIndicator.isCanceled = true;
 
       try {
         await driver.readRadio(serialPortPath, progressIndicator);

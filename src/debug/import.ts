@@ -5,7 +5,7 @@ import { ConsoleTransport, LogLayer } from 'loglayer';
 import type { Radio, RadioProgressIndicator } from '@springfield/ham-radio-api';
 import { SerialPort } from 'serialport';
 import fs from 'node:fs';
-import { createUILoggerWithCallback } from '../utils/ui-logger-factory.js';
+import { createUILoggerWithCallback } from '@springfield/ham-radio-utils';
 
 const logger = new LogLayer({
   transport: new ConsoleTransport({

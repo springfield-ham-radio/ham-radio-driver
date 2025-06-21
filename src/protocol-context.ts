@@ -1,6 +1,6 @@
 import type { SerialPort } from "serialport";
 import type { RadioProgressIndicator, RadioMemoryConfig, RadioMemorySegment } from "@springfield/ham-radio-api";
-import type { UILogger } from "./utils/ui-logger.js";
+import type { UILogger } from "@springfield/ham-radio-utils";
 
 /**
  * Protocol context for execution of radio communication protocols.

@@ -2,7 +2,7 @@ import type { ILogLayer } from 'loglayer';
 import type { RadioProgressIndicator, Radio } from '@springfield/ham-radio-api';
 import { ProtocolInterpreter } from './protocol-interpreter.js';
 import { SerialPort } from 'serialport';
-import type { UILogger } from './utils/ui-logger.js';
+import type { UILogger } from '@springfield/ham-radio-utils';
 
 /**
  * RadioDriver provides high-level operations for reading and writing radio memory
