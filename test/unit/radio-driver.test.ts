@@ -14,6 +14,8 @@ describe('RadioDriver', () => {
       name: 'Test Radio',
       manufacturer: 'Test Manufacturer',
     },
+    version: '1.0.0',
+    description: 'Test radio configuration for unit tests',
     settingsSchema: {
       model: RadioModelId('test-radio'),
       settingsSchema: {},

@@ -18,7 +18,13 @@ Create a declarative DSL that describes the communication protocol for each radi
 
 ```json
 {
-  "radioModel": "baofeng-uv5r",
+  "id": {
+    "model": "baofeng-uv5r",
+    "name": "Baofeng UV-5R",
+    "manufacturer": "Baofeng"
+  },
+  "version": "1.0.0",
+  "description": "Baofeng UV-5R radio configuration",
   "serialConfig": {
     "baudRate": 9600,
     "dataBits": 8,
@@ -26,16 +32,22 @@ Create a declarative DSL that describes the communication protocol for each radi
     "parity": "none"
   },
   "memoryConfig": {
-    "channelSegment": {
-      "startAddress": "0x0000",
-      "endAddress": "0x17ff",
-      "chunkSize": 64
-    },
-    "settingsSegment": {
-      "startAddress": "0x1ec0",
-      "endAddress": "0x1fff",
-      "chunkSize": 64
+    "chunkSize": 64,
+    "segments": {
+      "channels": {
+        "startAddress": 0,
+        "endAddress": 6143
+      },
+      "settings": {
+        "startAddress": 7872,
+        "endAddress": 8191
+      }
     }
+  },
+  "settingsSchema": {
+    "model": "baofeng-uv5r",
+    "settingsSchema": {},
+    "channelSchema": {}
   },
   "readMemory": [...],
   "writeMemory": [...]
@@ -150,21 +162,33 @@ Each step in the protocol is defined as an object with a single key representing
 
 ```json
 {
-  "radioModel": "baofeng-uv5r",
+  "id": {
+    "model": "baofeng-uv5r",
+    "name": "Baofeng UV-5R",
+    "manufacturer": "Baofeng"
+  },
+  "version": "1.0.0",
+  "description": "Baofeng UV-5R radio configuration",
   "serialConfig": {
     "baudRate": 9600
   },
   "memoryConfig": {
-    "channels": {
-      "startAddress": "0x0000",
-      "endAddress": "0x17ff",
-      "chunkSize": 64
-    },
-    "settings": {
-      "startAddress": "0x1ec0",
-      "endAddress": "0x1fff",
-      "chunkSize": 64
+    "chunkSize": 64,
+    "segments": {
+      "channels": {
+        "startAddress": 0,
+        "endAddress": 6143
+      },
+      "settings": {
+        "startAddress": 7872,
+        "endAddress": 8191
+      }
     }
+  },
+  "settingsSchema": {
+    "model": "baofeng-uv5r",
+    "settingsSchema": {},
+    "channelSchema": {}
   },
   "readMemory": [
     {

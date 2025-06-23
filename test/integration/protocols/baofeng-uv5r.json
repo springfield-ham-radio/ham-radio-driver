@@ -1,5 +1,7 @@
 {
   "radioModel": "baofeng-uv5r",
+  "version": "1.0.0",
+  "description": "Baofeng UV-5R radio configuration for testing",
   "serialConfig": {
     "baudRate": 9600,
     "dataBits": 8,

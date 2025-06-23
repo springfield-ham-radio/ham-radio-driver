@@ -10,6 +10,8 @@ const baofengRadio: Radio = {
     name: 'Baofeng UV-5R',
     manufacturer: 'Baofeng',
   },
+  version: '1.0.0',
+  description: 'Baofeng UV-5R radio configuration for memory read/write operations',
   settingsSchema: {
     model: RadioModelId('baofeng-uv5r'),
     settingsSchema: {},

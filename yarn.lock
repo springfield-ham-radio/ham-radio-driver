@@ -426,30 +426,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@loglayer/context-manager@npm:1.1.0":
-  version: 1.1.0
-  resolution: "@loglayer/context-manager@npm:1.1.0"
-  dependencies:
-    "@loglayer/shared": "npm:2.3.0"
-  checksum: 10/c233de2fc8f2ac0cc64635bd3565452254af64e8747822437340f559ed46d7aee6b58e3a3e2b8372ff5d20ab0863222d14865481cad7c7460e80581895a78373
-  languageName: node
-  linkType: hard
-
 "@loglayer/context-manager@npm:1.1.1":
   version: 1.1.1
   resolution: "@loglayer/context-manager@npm:1.1.1"
   dependencies:
     "@loglayer/shared": "npm:2.3.1"
   checksum: 10/7fcd8106df6b37dbde613e8bc7b5df6feaef92baf9827be8e94bcd2620da00b434e1dbb4ef7181ff1509ecf60cb42655c857967dd2d41029efa86c7872ea05f6
-  languageName: node
-  linkType: hard
-
-"@loglayer/plugin@npm:2.1.0":
-  version: 2.1.0
-  resolution: "@loglayer/plugin@npm:2.1.0"
-  dependencies:
-    "@loglayer/shared": "npm:2.3.0"
-  checksum: 10/e359551418c77c7ade220898adc5ce6747650257280d72f7ddfef192dca2b7dd923a388fc39efb2b7fb348ce181b21b9607cc0a5f9ab71c3ead0740ffec7f0c1
   languageName: node
   linkType: hard
 
@@ -462,26 +444,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@loglayer/shared@npm:2.3.0":
-  version: 2.3.0
-  resolution: "@loglayer/shared@npm:2.3.0"
-  checksum: 10/00df978e081fd1759d1252d22a5eb19a085748eea4f693f0937e0cbbe91e83ac45ac3d875c9fea4d5d00ea41a6ba9e71899f4dd088799f48b2d9a59bbc8deaa7
-  languageName: node
-  linkType: hard
-
 "@loglayer/shared@npm:2.3.1":
   version: 2.3.1
   resolution: "@loglayer/shared@npm:2.3.1"
   checksum: 10/491d6246b7524cc4d512627d5d5818520a9821c31153a3497b3536ad53f6e6ba4cd078b89581cfc26e26baf81f4695527b8dd2800f804120bc687b7b8d3d29f1
-  languageName: node
-  linkType: hard
-
-"@loglayer/transport@npm:2.2.0":
-  version: 2.2.0
-  resolution: "@loglayer/transport@npm:2.2.0"
-  dependencies:
-    "@loglayer/shared": "npm:2.3.0"
-  checksum: 10/498bd64400da702d458f201a558339dcd77f26ad027850d6620e84fa56c7f920ec7fed9b480803df7da3272506506b1012a03f962cee65c8c331fcf791d883c3
   languageName: node
   linkType: hard
 
@@ -1319,12 +1285,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@springfield/ham-radio-api@npm:^15.0.0":
-  version: 15.0.0
-  resolution: "@springfield/ham-radio-api@npm:15.0.0"
+"@springfield/ham-radio-api@npm:^16.0.0":
+  version: 16.0.0
+  resolution: "@springfield/ham-radio-api@npm:16.0.0"
   dependencies:
     ts-brand: "npm:^0.2.0"
-  checksum: 10/93330d3f159ce3ad92c6f0d62c80ffbe8482002ded0b6ef50137149c7c79513775541a0f149ae89791a38a8aa6d325b265cd9452badbd850804b67a3ac783cff
+  checksum: 10/e7db910fcc97112ebfd6d0108481b5805df0e1d0ae9a73bf74dd338328f04b3d7226106c75b749f689208138c171d30ee31c0566d8bc687a019d611fb68d7e5c
   languageName: node
   linkType: hard
 
@@ -1338,14 +1304,14 @@ __metadata:
     "@semantic-release/git": "npm:10.0.1"
     "@semantic-release/gitlab": "npm:13.2.6"
     "@serialport/parser-byte-length": "npm:^13.0.0"
-    "@springfield/ham-radio-api": "npm:^15.0.0"
+    "@springfield/ham-radio-api": "npm:^16.0.0"
     "@springfield/ham-radio-utils": "npm:^2.1.0"
     "@types/chai": "npm:^5.2.2"
     "@types/node": "npm:^24.0.3"
     chai: "npm:^5.2.0"
     fishery: "npm:^2.3.1"
     husky: "npm:9.1.7"
-    loglayer: "npm:^6.4.2"
+    loglayer: "npm:^6.4.3"
     oxlint: "npm:^1.2.0"
     semantic-release: "npm:24.2.5"
     semantic-release-yarn: "npm:3.0.2"
@@ -3659,18 +3625,6 @@ __metadata:
   version: 4.17.21
   resolution: "lodash@npm:4.17.21"
   checksum: 10/c08619c038846ea6ac754abd6dd29d2568aa705feb69339e836dfa8d8b09abbb2f859371e86863eda41848221f9af43714491467b5b0299122431e202bb0c532
-  languageName: node
-  linkType: hard
-
-"loglayer@npm:^6.4.2":
-  version: 6.4.2
-  resolution: "loglayer@npm:6.4.2"
-  dependencies:
-    "@loglayer/context-manager": "npm:1.1.0"
-    "@loglayer/plugin": "npm:2.1.0"
-    "@loglayer/shared": "npm:2.3.0"
-    "@loglayer/transport": "npm:2.2.0"
-  checksum: 10/4e50826ddf1e06cb670f437f85e44d6933299cb296a20531138d116969fb4674fe2cf733eb7649708f975a274adf01518904f78b41355110a1c1a3fe590297e5
   languageName: node
   linkType: hard
 
