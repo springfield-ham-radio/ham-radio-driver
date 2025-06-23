@@ -2,6 +2,8 @@
 
 A TypeScript library providing a Domain Specific Language (DSL) for communicating with ham radio devices over serial connections. This library allows you to define radio protocols using a declarative configuration and execute them to read and write radio memory.
 
+This module may not be used by the renderer due to the dependency on the serial port.
+
 ## Features
 
 - **Declarative Protocol Definition**: Define radio communication protocols using JSON configuration
