@@ -1,3 +1,12 @@
+## <small>1.0.1 (2025-07-04)</small>
+
+* Merge branch 'renovate/pin-dependencies' into 'main' ([0cf52c0](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/0cf52c0))
+* Merge branch 'renovate/springfield-ham-radio-utils-2.x' into 'main' ([5daa2fc](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/5daa2fc))
+* Merge branch 'renovate/yarn-monorepo' into 'main' ([43d6c6d](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/43d6c6d))
+* fix(deps): update dependency @springfield/ham-radio-utils to ^2.2.0 ([2ca4315](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/2ca4315))
+* chore(deps): pin dependencies ([187ecbf](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/187ecbf))
+* chore(deps): update yarn to v4.9.2 ([51c1f55](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/51c1f55))
+
 ## 1.0.0 (2025-06-24)
 
 * ci: add GitLab CI configuration for build and release processes ([7f37874](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/7f37874))
