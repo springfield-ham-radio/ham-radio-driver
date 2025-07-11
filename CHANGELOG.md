@@ -1,3 +1,10 @@
+## <small>1.0.2 (2025-07-11)</small>
+
+* Merge branch 'renovate/chai-5.x' into 'main' ([8446a76](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/8446a76))
+* Merge branch 'renovate/loglayer-6.x' into 'main' ([77f8ba1](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/77f8ba1))
+* fix(deps): update dependency loglayer to ^6.6.0 ([ad50e87](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/ad50e87))
+* chore(deps): update dependency chai to v5.2.1 ([f158b90](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/f158b90))
+
 ## <small>1.0.1 (2025-07-04)</small>
 
 * Merge branch 'renovate/pin-dependencies' into 'main' ([0cf52c0](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/0cf52c0))
