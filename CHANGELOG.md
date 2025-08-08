@@ -1,3 +1,14 @@
+## <small>1.0.3 (2025-08-08)</small>
+
+* Merge branch 'renovate/oxlint-1.x' into 'main' ([0fcfcda](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/0fcfcda))
+* Merge branch 'renovate/oxlint-1.x' into 'main' ([73c7b05](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/73c7b05))
+* Merge branch 'renovate/springfield-ham-radio-api-16.x' into 'main' ([3288dee](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/3288dee))
+* Merge branch 'renovate/typescript-5.x' into 'main' ([44b2d49](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/44b2d49))
+* fix(deps): update dependency @springfield/ham-radio-api to ^16.1.2 ([094bc69](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/094bc69))
+* chore(deps): update dependency oxlint to v1.7.0 ([2ef91bb](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/2ef91bb))
+* chore(deps): update dependency oxlint to v1.8.0 ([c2f9823](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/c2f9823))
+* chore(deps): update dependency typescript to v5.9.2 ([e78cc71](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/e78cc71))
+
 ## <small>1.0.2 (2025-07-11)</small>
 
 * Merge branch 'renovate/chai-5.x' into 'main' ([8446a76](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/8446a76))
