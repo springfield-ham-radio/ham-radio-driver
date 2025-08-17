@@ -1,5 +1,5 @@
+import type { Radio, RadioProgressIndicator } from '@springfield/ham-radio-api';
 import type { ILogLayer } from 'loglayer';
-import type { RadioProgressIndicator, Radio } from '@springfield/ham-radio-api';
 import { ProtocolInterpreter } from './protocol-interpreter.js';
 import { SerialPort } from 'serialport';
 import type { UILogger } from '@springfield/ham-radio-utils';
