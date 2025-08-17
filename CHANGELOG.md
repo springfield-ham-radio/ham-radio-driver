@@ -1,3 +1,9 @@
+## 1.1.0 (2025-08-17)
+
+* fix: update dependencies ([f3fc562](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/f3fc562))
+* chore: add various documentation files for project standards and practices ([c89163b](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/c89163b))
+* feat: add .oxlintrc.json configuration file for linting rules and settings ([76f0da1](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/76f0da1))
+
 ## <small>1.0.3 (2025-08-08)</small>
 
 * Merge branch 'renovate/oxlint-1.x' into 'main' ([0fcfcda](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/0fcfcda))
