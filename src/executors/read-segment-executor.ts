@@ -96,6 +96,19 @@ export class ReadSegmentExecutor implements StepExecutor {
       endReceived: number[];
     }> = [];
 
+    // Calculate total chunks across all segments for progress tracking
+    const totalChunks = segmentNames.reduce((total: number, segmentName: string) => {
+      const segmentConfig = context.memoryConfig.segments[segmentName];
+      if (segmentConfig) {
+        const segmentSize = segmentConfig.endAddress - segmentConfig.startAddress + 1;
+        const segmentChunks = Math.ceil(segmentSize / context.memoryConfig.chunkSize);
+        return total + segmentChunks;
+      }
+      return total;
+    }, 0);
+
+    let processedChunks = 0;
+
     for (const segmentName of segmentNames) {
       // Check for cancellation before processing each segment
       if (context.progressIndicator?.isCanceled) {
@@ -114,7 +127,19 @@ export class ReadSegmentExecutor implements StepExecutor {
         name: segmentName,
       };
 
-      const segmentData = await this.readSegmentData({ context, endChunk, segmentConfig, startChunk });
+      const segmentData = await this.readSegmentData({
+        context,
+        endChunk,
+        segmentConfig,
+        startChunk,
+        totalChunks,
+        processedChunks
+      });
+
+      // Update processed chunks count
+      const segmentSize = segmentConfig.endAddress - segmentConfig.startAddress + 1;
+      const segmentChunks = Math.ceil(segmentSize / context.memoryConfig.chunkSize);
+      processedChunks += segmentChunks;
 
       // Get the chunk logs for this segment and add segment name
       const segmentChunkLogs = context.variables.get('lastReadSegmentChunks') || [];
@@ -146,7 +171,7 @@ export class ReadSegmentExecutor implements StepExecutor {
    * The method processes the segment address range in chunks of the specified size,
    * updating the current address in the context for each chunk processed.
    */
-  private async readSegmentData(params: { context: ProtocolContext; endChunk: any; segmentConfig: RadioMemorySegment; startChunk: any }): Promise<Uint8Array> {
+  private async readSegmentData(params: { context: ProtocolContext; endChunk: any; segmentConfig: RadioMemorySegment; startChunk: any; totalChunks: number; processedChunks: number }): Promise<Uint8Array> {
     const { endAddress, startAddress } = params.segmentConfig;
     const chunkSize = params.context.memoryConfig.chunkSize;
     const totalSize = endAddress - startAddress + 1;
@@ -165,6 +190,18 @@ export class ReadSegmentExecutor implements StepExecutor {
     for (let address = startAddress; address <= endAddress; address += chunkSize) {
       if (params.context.progressIndicator?.isCanceled) {
         throw new CancelledException('Radio read was cancelled');
+      }
+
+      // Update progress with granular chunk-level tracking
+      if (params.context.progressIndicator && params.totalChunks > 0) {
+        const currentChunkInSegment = Math.floor((address - startAddress) / chunkSize);
+        const totalChunksProgress = (params.processedChunks + currentChunkInSegment) / params.totalChunks;
+
+        // Scale progress to be between 0.75 and 1.0 since this is likely the 4th step
+        // of the protocol (after magic number, identifier, and begin clone)
+        const scaledProgress = 0.75 + (totalChunksProgress * 0.25);
+
+        params.context.progressIndicator.setValue(Math.min(scaledProgress, 1.0));
       }
 
       params.context.currentSegment!.currentAddress = address;
