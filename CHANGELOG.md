@@ -1,3 +1,7 @@
+## <small>1.1.2 (2025-08-18)</small>
+
+* fix: enhance ReadSegmentExecutor with progress tracking for chunk processing ([52c13bf](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/52c13bf))
+
 ## <small>1.1.1 (2025-08-18)</small>
 
 * fix: update tsconfig.json to remove test directory from include ([0929e4c](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/0929e4c))
