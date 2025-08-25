@@ -1,4 +1,8 @@
 import { SerialPort } from 'serialport';
 
-const ports = await SerialPort.list();
-console.log(ports.map((port) => port.path));
+async function listSerialPorts() {
+  const ports = await SerialPort.list();
+  console.log(ports.map((port) => port.path));
+}
+
+listSerialPorts().catch(console.error);

@@ -3,6 +3,7 @@ import type { ILogLayer } from 'loglayer';
 import { ProtocolInterpreter } from './protocol-interpreter.js';
 import { SerialPort } from 'serialport';
 import type { UILogger } from '@springfield/ham-radio-utils';
+import { SerialLogger, createLoggingSerialPort } from './utils/index.js';
 
 /**
  * RadioDriver provides high-level operations for reading and writing radio memory
@@ -29,6 +30,7 @@ export class RadioDriver {
   private radio: Radio;
   private logger: ILogLayer;
   private uiLogger?: UILogger;
+  private serialLogger?: SerialLogger;
 
   /**
    * Creates a new RadioDriver instance for the specified radio model.
@@ -48,10 +50,15 @@ export class RadioDriver {
    * const driver = new RadioDriver(baofengUV5RConfig, logger, uiLogger);
    * ```
    */
-  constructor(radio: Radio, logger: ILogLayer, uiLogger?: UILogger) {
+  constructor(radio: Radio, logger: ILogLayer, uiLogger?: UILogger, enableSerialLogging: boolean = false) {
     this.radio = radio;
     this.logger = logger;
     this.uiLogger = uiLogger;
+
+    if (enableSerialLogging) {
+      this.serialLogger = new SerialLogger(logger);
+      this.logger.info('Serial logging enabled');
+    }
   }
 
   /**
@@ -91,6 +98,12 @@ export class RadioDriver {
       this.logger.debug(`Connecting to serial port: '${serialPortPath}'`);
       port = await this.connectToRadio(serialPortPath);
 
+      // Wrap the port with logging if serial logging is enabled
+      if (this.serialLogger) {
+        port = createLoggingSerialPort(port, this.serialLogger);
+        this.logger.info(`Serial logging enabled for read operation. Log file: ${this.serialLogger.getLogFilePath()}`);
+      }
+
       this.logger.debug('Starting radio memory read');
       const buffer = await this.readRadioMemory(port, progressIndicator);
       this.logger.debug('Radio memory read completed');
@@ -99,6 +112,10 @@ export class RadioDriver {
       if (port && port.isOpen) {
         this.logger.withMetadata({ serialPortPath }).debug('Closing serial port');
         port.close();
+      }
+
+      if (this.serialLogger) {
+        this.serialLogger.close();
       }
     }
   }
@@ -141,6 +158,12 @@ export class RadioDriver {
       this.logger.debug(`Connecting to serial port: '${serialPortPath}'`);
       port = await this.connectToRadio(serialPortPath);
 
+      // Wrap the port with logging if serial logging is enabled
+      if (this.serialLogger) {
+        port = createLoggingSerialPort(port, this.serialLogger);
+        this.logger.info(`Serial logging enabled for write operation. Log file: ${this.serialLogger.getLogFilePath()}`);
+      }
+
       this.logger.debug('Starting radio memory write');
       await this.writeRadioMemory(port, data, progressIndicator);
       this.logger.debug('Radio memory write completed');
@@ -148,6 +171,10 @@ export class RadioDriver {
       if (port && port.isOpen) {
         this.logger.withMetadata({ serialPortPath }).debug('Closing serial port');
         port.close();
+      }
+
+      if (this.serialLogger) {
+        this.serialLogger.close();
       }
     }
   }

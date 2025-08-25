@@ -27,7 +27,9 @@
 // Export all utilities from the utils directory
 export * from "./expression-resolvers.js";
 export * from "./expression-utils.js";
+export * from "./log-comparator.js";
 export * from "./protocol-operations.js";
 export * from "./receive-pattern-validators.js";
+export * from "./serial-logger.js";
 export * from "./step-utils.js";
 export * from "./validator-factory.js";
