@@ -1,3 +1,11 @@
+## 1.2.0 (2025-08-25)
+
+* feat: serial port logging ([978000b](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/978000b))
+* Merge branch 'renovate/semantic-release-monorepo' into 'main' ([82d570d](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/82d570d))
+* Merge branch 'renovate/yarn-monorepo' into 'main' ([ee8059d](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/ee8059d))
+* chore(deps): update dependency @semantic-release/gitlab to v13.2.7 ([61f26db](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/61f26db))
+* chore(deps): update yarn to v4.9.3 ([52de69f](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/52de69f))
+
 ## <small>1.1.2 (2025-08-18)</small>
 
 * fix: enhance ReadSegmentExecutor with progress tracking for chunk processing ([52c13bf](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/52c13bf))
