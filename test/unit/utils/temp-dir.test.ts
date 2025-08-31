@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it, afterEach } from 'node:test';
 import { expect } from 'chai';
 import * as fs from 'fs';
 import { TempDir } from '../../utils/temp-dir.js';

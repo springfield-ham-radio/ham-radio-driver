@@ -75,7 +75,7 @@ export class TempDir {
       fs.writeFileSync(testFile, 'test');
       fs.unlinkSync(testFile);
     } catch (error) {
-      throw new Error(`Temporary directory is not writable: ${dirPath}`);
+      throw new Error(`Temporary directory is not writable: ${dirPath}`, error);
     }
   }
 
