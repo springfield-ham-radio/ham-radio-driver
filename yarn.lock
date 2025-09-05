@@ -1342,7 +1342,7 @@ __metadata:
     "@springfield/ham-radio-utils": "npm:^3.0.0"
     "@types/chai": "npm:5.2.2"
     "@types/node": "npm:24.3.0"
-    chai: "npm:5.2.1"
+    chai: "npm:5.3.3"
     fishery: "npm:2.3.1"
     husky: "npm:9.1.7"
     loglayer: "npm:^6.6.0"
@@ -1729,16 +1729,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chai@npm:5.2.1":
-  version: 5.2.1
-  resolution: "chai@npm:5.2.1"
+"chai@npm:5.3.3":
+  version: 5.3.3
+  resolution: "chai@npm:5.3.3"
   dependencies:
     assertion-error: "npm:^2.0.1"
     check-error: "npm:^2.1.1"
     deep-eql: "npm:^5.0.1"
     loupe: "npm:^3.1.0"
     pathval: "npm:^2.0.0"
-  checksum: 10/2d9b14c9bbb9b791641ecee0d74a53f34d2c86f05c10b5567041ed376177f87af9dc7f5398207fd2711affbfeb9f0f1f60e11bcaf021f78ef37b7c65a6d94e7d
+  checksum: 10/0d0ef63106083b05c7ba510697cd9991a02b8df5984a7d010ab4af10205c7a1f27d1c06bfa4679540894295ac4dcc22aa2a281e2e4cfe5133c1db379626689a2
   languageName: node
   linkType: hard
 
