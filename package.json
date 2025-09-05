@@ -1,6 +1,6 @@
 {
   "name": "@springfield/ham-radio-driver",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "Bryan Hunt",
   "license": "MIT",
   "packageManager": "yarn@4.9.4",

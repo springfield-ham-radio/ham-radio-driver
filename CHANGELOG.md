@@ -1,3 +1,16 @@
+## <small>1.2.1 (2025-09-05)</small>
+
+* Merge branch 'renovate/chai-5.x' into 'main' ([1655f57](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/1655f57))
+* Merge branch 'renovate/semantic-release-monorepo' into 'main' ([13fb934](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/13fb934))
+* Merge branch 'renovate/tsx-4.x' into 'main' ([01506fa](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/01506fa))
+* Merge branch 'renovate/yarn-monorepo' into 'main' ([f6847e1](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/f6847e1))
+* chore(deps): update dependency @semantic-release/gitlab to v13.2.8 ([a8b1252](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/a8b1252))
+* chore(deps): update dependency chai to v5.3.3 ([97e4042](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/97e4042))
+* chore(deps): update dependency tsx to v4.20.5 ([c3796c4](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/c3796c4))
+* chore(deps): update yarn to v4.9.4 ([344640f](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/344640f))
+* build: fix linting errors ([9a21865](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/9a21865))
+* fix: add SerialLogger export ([29eb795](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/29eb795))
+
 ## 1.2.0 (2025-08-25)
 
 * feat: serial port logging ([978000b](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/978000b))
