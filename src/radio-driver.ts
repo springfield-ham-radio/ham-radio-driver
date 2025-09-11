@@ -56,8 +56,7 @@ export class RadioDriver {
     this.uiLogger = uiLogger;
 
     if (enableSerialLogging) {
-      this.serialLogger = new SerialLogger(logger);
-      this.logger.info('Serial logging enabled');
+      this.serialLogger = new SerialLogger();
     }
   }
 

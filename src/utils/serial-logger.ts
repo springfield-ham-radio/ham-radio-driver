@@ -1,70 +1,91 @@
 import { SerialPort } from 'serialport';
-import type { ILogLayer } from 'loglayer';
 import { toHexWords } from '@springfield/ham-radio-utils';
 import * as fs from 'fs';
+
+/**
+ * Interface for individual log entries in the JSON structure.
+ * Note: data is stored as number[] instead of Uint8Array because JSON.stringify()
+ * converts Uint8Array to an object with numeric keys rather than an array.
+ */
+interface LogEntry {
+  timestamp: string;
+  elapsedMs: number;
+  direction: 'SEND' | 'RECV';
+  data: number[]; // Raw byte values (0-255) representing the Uint8Array data
+  description?: string;
+}
+
+/**
+ * Interface for the complete JSON log structure.
+ */
+interface SerialLogData {
+  metadata: {
+    startTime: string;
+    endTime?: string;
+    totalEntries: number;
+    version: string;
+  };
+  entries: LogEntry[];
+}
 
 /**
  * SerialLogger provides logging capabilities for serial port communication
  * to enable easy comparison with sniffer output.
  *
  * This class wraps SerialPort instances and logs all read/write operations
- * in a standardized format that matches the sniffer output format.
+ * in a JSON format that makes it easy to render and compare with sniffer output.
+ *
+ * Note: Data is stored as number[] instead of Uint8Array in the JSON because
+ * JSON.stringify() converts Uint8Array to an object with numeric keys rather
+ * than preserving it as an array. The number[] represents raw byte values (0-255).
  */
 export class SerialLogger {
-  private logger: ILogLayer;
   private logFile: string;
-  private logStream: fs.WriteStream | null = null;
+  private logData!: SerialLogData;
   private startTime: number;
 
   /**
    * Creates a new SerialLogger instance.
    *
-   * @param logger - The loglayer logger instance for console logging
-   * @param logFile - Optional path to the log file. If not provided, a timestamped file will be created
+   * @param logFile - Optional path to the JSON log file. If not provided, a timestamped file will be created
    */
-  constructor(logger: ILogLayer, logFile?: string) {
-    this.logger = logger;
+  constructor(logFile?: string) {
     this.startTime = Date.now();
 
     if (logFile) {
       this.logFile = logFile;
     } else {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      this.logFile = `radio-driver-${timestamp}.log`;
+      this.logFile = `radio-driver-${timestamp}.json`;
     }
 
-    this.initializeLogFile();
+    this.initializeLogData();
   }
 
   /**
-   * Initializes the log file and writes the header.
+   * Initializes the log data structure.
    */
-  private initializeLogFile(): void {
+  private initializeLogData(): void {
+    this.logData = {
+      metadata: {
+        startTime: new Date().toISOString(),
+        totalEntries: 0,
+        version: '1.0.0',
+      },
+      entries: [],
+    };
+  }
+
+  /**
+   * Writes the current log data to the JSON file.
+   */
+  private writeLogFile(): void {
     try {
-      this.logStream = fs.createWriteStream(this.logFile, { flags: 'a' });
-      this.writeLogEntry('=== Radio Driver Serial Communication Log ===');
-      this.writeLogEntry(`Started at: ${new Date().toISOString()}`);
-      this.writeLogEntry('Format: [Timestamp] [Direction] [Data]');
-      this.writeLogEntry('');
+      const jsonData = JSON.stringify(this.logData, null, 2);
+      fs.writeFileSync(this.logFile, jsonData, 'utf8');
     } catch (error) {
-      this.logger.withError(error).error('Failed to initialize log file');
+      console.error('Failed to write to log file:', error);
     }
-  }
-
-  /**
-   * Writes a log entry to both the file and console.
-   *
-   * @param message - The message to log
-   */
-  private writeLogEntry(message: string): void {
-    if (this.logStream) {
-      try {
-        this.logStream.write(message + '\n');
-      } catch (error) {
-        this.logger.withError(error).error('Failed to write to log file');
-      }
-    }
-    this.logger.debug(message);
   }
 
   /**
@@ -74,16 +95,20 @@ export class SerialLogger {
    * @param description - Optional description of the operation
    */
   logSend(data: Uint8Array, description?: string): void {
+    const elapsedMs = Date.now() - this.startTime;
     const timestamp = this.getTimestamp();
-    const hexData = toHexWords(data);
-    const direction = 'SEND';
 
-    let logMessage = `[${timestamp}] [${direction}] ${hexData}`;
-    if (description) {
-      logMessage += ` - ${description}`;
-    }
+    const entry: LogEntry = {
+      timestamp,
+      elapsedMs,
+      direction: 'SEND',
+      data: Array.from(data),
+      description,
+    };
 
-    this.writeLogEntry(logMessage);
+    this.logData.entries.push(entry);
+    this.logData.metadata.totalEntries++;
+    this.writeLogFile();
   }
 
   /**
@@ -93,16 +118,20 @@ export class SerialLogger {
    * @param description - Optional description of the operation
    */
   logReceive(data: Uint8Array, description?: string): void {
+    const elapsedMs = Date.now() - this.startTime;
     const timestamp = this.getTimestamp();
-    const hexData = toHexWords(data);
-    const direction = 'RECV';
 
-    let logMessage = `[${timestamp}] [${direction}] ${hexData}`;
-    if (description) {
-      logMessage += ` - ${description}`;
-    }
+    const entry: LogEntry = {
+      timestamp,
+      elapsedMs,
+      direction: 'RECV',
+      data: Array.from(data),
+      description,
+    };
 
-    this.writeLogEntry(logMessage);
+    this.logData.entries.push(entry);
+    this.logData.metadata.totalEntries++;
+    this.writeLogFile();
   }
 
   /**
@@ -121,12 +150,8 @@ export class SerialLogger {
    * Closes the log file and cleans up resources.
    */
   close(): void {
-    if (this.logStream) {
-      this.writeLogEntry('');
-      this.writeLogEntry(`=== Log completed at: ${new Date().toISOString()} ===`);
-      this.logStream.end();
-      this.logStream = null;
-    }
+    this.logData.metadata.endTime = new Date().toISOString();
+    this.writeLogFile();
   }
 
   /**
@@ -136,6 +161,27 @@ export class SerialLogger {
    */
   getLogFilePath(): string {
     return this.logFile;
+  }
+
+  /**
+   * Converts a number array (from JSON) back to a Uint8Array.
+   * This is the reverse of Array.from(uint8Array) used when storing data.
+   *
+   * @param data - Array of numbers (0-255) representing raw byte values
+   * @returns Uint8Array representation of the data
+   */
+  static dataToUint8Array(data: number[]): Uint8Array {
+    return new Uint8Array(data);
+  }
+
+  /**
+   * Converts a number array (from JSON) to a hex string for display.
+   *
+   * @param data - Array of numbers (0-255) representing raw byte values
+   * @returns Hex string representation of the data (e.g., "AA BB CC DD")
+   */
+  static dataToHexString(data: number[]): string {
+    return toHexWords(new Uint8Array(data));
   }
 }
 
