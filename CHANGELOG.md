@@ -1,3 +1,9 @@
+## 1.3.0 (2025-09-11)
+
+* feat: force version bump ([d576949](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/d576949))
+* test: update SerialLogger tests to use JSON format and remove MockLogLayer dependency ([27f1793](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/27f1793))
+* feature: update SerialLogger to use JSON format for logging ([5fca513](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/5fca513))
+
 ## <small>1.2.1 (2025-09-05)</small>
 
 * Merge branch 'renovate/chai-5.x' into 'main' ([1655f57](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/1655f57))
