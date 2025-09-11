@@ -2,20 +2,17 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import { expect } from 'chai';
 import * as fs from 'fs';
 import { SerialPort } from 'serialport';
-import { MockLogLayer } from 'loglayer';
 import { SerialLogger, createLoggingSerialPort } from '../../../src/utils/serial-logger.js';
 import { TempDir } from '../../utils/temp-dir.js';
 
 describe('SerialLogger', () => {
-  let logger: MockLogLayer;
   let tempDir: TempDir;
   let testLogFile: string;
 
   beforeEach(() => {
-    logger = new MockLogLayer();
     tempDir = new TempDir();
     tempDir.create('serial-logger-test');
-    testLogFile = tempDir.getFilePath('test.log');
+    testLogFile = tempDir.getFilePath('test.json');
   });
 
   afterEach(() => {
@@ -24,47 +21,47 @@ describe('SerialLogger', () => {
 
   describe('constructor', () => {
     it('should create logger with custom log file', async () => {
-      const serialLogger = new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
 
       expect(serialLogger.getLogFilePath()).to.equal(testLogFile);
 
-      // Wait a bit for file creation to complete
-      await new Promise(resolve => setTimeout(resolve, 10));
-      expect(fs.existsSync(testLogFile)).to.be.true;
+      // File should not exist until first log entry
+      expect(fs.existsSync(testLogFile)).to.be.false;
     });
 
     it('should create logger with auto-generated log file', async () => {
-      const serialLogger = new SerialLogger(logger);
+      const serialLogger = new SerialLogger();
 
       const logPath = serialLogger.getLogFilePath();
-      expect(logPath).to.match(/^radio-driver-.*\.log$/);
+      expect(logPath).to.match(/^radio-driver-.*\.json$/);
 
-      // Wait a bit for file creation to complete
-      await new Promise(resolve => setTimeout(resolve, 10));
-      expect(fs.existsSync(logPath)).to.be.true;
+      // File should not exist until first log entry
+      expect(fs.existsSync(logPath)).to.be.false;
 
       // Clean up the auto-generated log file
       serialLogger.close();
-
-      // Wait for cleanup to complete
-      await new Promise(resolve => setTimeout(resolve, 10));
-
-      // Remove the auto-generated log file from the current directory
-      if (fs.existsSync(logPath)) {
-        fs.unlinkSync(logPath);
-      }
     });
 
     it('should initialize log file with header', async () => {
-      new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
+
+      // Write some data to create the file
+      serialLogger.logSend(new Uint8Array([0x01, 0x02]));
 
       // Wait a bit for file creation to complete
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const logContent = fs.readFileSync(testLogFile, 'utf8');
-      expect(logContent).to.include('=== Radio Driver Serial Communication Log ===');
-      expect(logContent).to.include('Started at:');
-      expect(logContent).to.include('Format: [Timestamp] [Direction] [Data]');
+      const logData = JSON.parse(logContent);
+      expect(logData.metadata).to.exist;
+      expect(logData.metadata.startTime).to.exist;
+      expect(logData.metadata.totalEntries).to.equal(1);
+      expect(logData.metadata.version).to.equal('1.0.0');
+      expect(logData.entries).to.be.an('array');
+      expect(logData.entries).to.have.length(1);
+
+      // Clean up
+      serialLogger.close();
     });
 
             it('should handle file creation errors gracefully', async () => {
@@ -72,7 +69,7 @@ describe('SerialLogger', () => {
       fs.mkdirSync(testLogFile, { recursive: true });
 
       // Should not throw an error during construction
-      const serialLogger = new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
       expect(serialLogger).to.be.instanceOf(SerialLogger);
 
       // The logger should still work for console logging even if file logging fails
@@ -94,7 +91,7 @@ describe('SerialLogger', () => {
 
   describe('logSend', () => {
         it('should log sent data with timestamp and direction', async () => {
-      const serialLogger = new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
       const testData = new Uint8Array([0x01, 0x02, 0x03]);
 
       // Wait for logger initialization
@@ -106,19 +103,21 @@ describe('SerialLogger', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const logContent = fs.readFileSync(testLogFile, 'utf8');
-      const lines = logContent.split('\n').filter(line => line.trim());
+      const logData = JSON.parse(logContent);
 
-      // Find the log entry (skip header lines)
-      const logEntry = lines.find(line => line.includes('[SEND]'));
-      expect(logEntry).to.exist;
-      expect(logEntry).to.match(/^\[\d+\.\d+\] \[SEND\] 0102 03$/);
+      expect(logData.entries).to.have.length(1);
+      const entry = logData.entries[0];
+      expect(entry.direction).to.equal('SEND');
+      expect(entry.data).to.deep.equal([1, 2, 3]);
+      expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
+      expect(entry.elapsedMs).to.be.a('number');
 
       // Clean up
       serialLogger.close();
     });
 
         it('should log sent data with description', async () => {
-      const serialLogger = new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
       const testData = new Uint8Array([0x01, 0x02, 0x03]);
       const description = 'Test command';
 
@@ -131,18 +130,22 @@ describe('SerialLogger', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const logContent = fs.readFileSync(testLogFile, 'utf8');
-      const lines = logContent.split('\n').filter(line => line.trim());
+      const logData = JSON.parse(logContent);
 
-      const logEntry = lines.find(line => line.includes('[SEND]'));
-      expect(logEntry).to.exist;
-      expect(logEntry).to.match(/^\[\d+\.\d+\] \[SEND\] 0102 03 - Test command$/);
+      expect(logData.entries).to.have.length(1);
+      const entry = logData.entries[0];
+      expect(entry.direction).to.equal('SEND');
+      expect(entry.data).to.deep.equal([1, 2, 3]);
+      expect(entry.description).to.equal('Test command');
+      expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
+      expect(entry.elapsedMs).to.be.a('number');
 
       // Clean up
       serialLogger.close();
     });
 
         it('should handle empty data', async () => {
-      const serialLogger = new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
       const testData = new Uint8Array([]);
 
       // Wait for logger initialization
@@ -154,11 +157,14 @@ describe('SerialLogger', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const logContent = fs.readFileSync(testLogFile, 'utf8');
-      const lines = logContent.split('\n').filter(line => line.trim());
+      const logData = JSON.parse(logContent);
 
-      const logEntry = lines.find(line => line.includes('[SEND]'));
-      expect(logEntry).to.exist;
-      expect(logEntry).to.match(/^\[\d+\.\d+\] \[SEND\] $/);
+      expect(logData.entries).to.have.length(1);
+      const entry = logData.entries[0];
+      expect(entry.direction).to.equal('SEND');
+      expect(entry.data).to.deep.equal([]);
+      expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
+      expect(entry.elapsedMs).to.be.a('number');
 
       // Clean up
       serialLogger.close();
@@ -167,7 +173,7 @@ describe('SerialLogger', () => {
 
   describe('logReceive', () => {
         it('should log received data with timestamp and direction', async () => {
-      const serialLogger = new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
       const testData = new Uint8Array([0x04, 0x05, 0x06]);
 
       // Wait for logger initialization
@@ -179,18 +185,21 @@ describe('SerialLogger', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const logContent = fs.readFileSync(testLogFile, 'utf8');
-      const lines = logContent.split('\n').filter(line => line.trim());
+      const logData = JSON.parse(logContent);
 
-      const logEntry = lines.find(line => line.includes('[RECV]'));
-      expect(logEntry).to.exist;
-      expect(logEntry).to.match(/^\[\d+\.\d+\] \[RECV\] 0405 06$/);
+      expect(logData.entries).to.have.length(1);
+      const entry = logData.entries[0];
+      expect(entry.direction).to.equal('RECV');
+      expect(entry.data).to.deep.equal([4, 5, 6]);
+      expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
+      expect(entry.elapsedMs).to.be.a('number');
 
       // Clean up
       serialLogger.close();
     });
 
         it('should log received data with description', async () => {
-      const serialLogger = new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
       const testData = new Uint8Array([0x04, 0x05, 0x06]);
       const description = 'Response data';
 
@@ -203,18 +212,22 @@ describe('SerialLogger', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const logContent = fs.readFileSync(testLogFile, 'utf8');
-      const lines = logContent.split('\n').filter(line => line.trim());
+      const logData = JSON.parse(logContent);
 
-      const logEntry = lines.find(line => line.includes('[RECV]'));
-      expect(logEntry).to.exist;
-      expect(logEntry).to.match(/^\[\d+\.\d+\] \[RECV\] 0405 06 - Response data$/);
+      expect(logData.entries).to.have.length(1);
+      const entry = logData.entries[0];
+      expect(entry.direction).to.equal('RECV');
+      expect(entry.data).to.deep.equal([4, 5, 6]);
+      expect(entry.description).to.equal('Response data');
+      expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
+      expect(entry.elapsedMs).to.be.a('number');
 
       // Clean up
       serialLogger.close();
     });
 
     it('should handle empty received data', async () => {
-      const serialLogger = new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
       const testData = new Uint8Array([]);
 
       // Wait for logger initialization
@@ -226,11 +239,14 @@ describe('SerialLogger', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const logContent = fs.readFileSync(testLogFile, 'utf8');
-      const lines = logContent.split('\n').filter(line => line.trim());
+      const logData = JSON.parse(logContent);
 
-      const logEntry = lines.find(line => line.includes('[RECV]'));
-      expect(logEntry).to.exist;
-      expect(logEntry).to.match(/^\[\d+\.\d+\] \[RECV\] $/);
+      expect(logData.entries).to.have.length(1);
+      const entry = logData.entries[0];
+      expect(entry.direction).to.equal('RECV');
+      expect(entry.data).to.deep.equal([]);
+      expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
+      expect(entry.elapsedMs).to.be.a('number');
 
       // Clean up
       serialLogger.close();
@@ -239,7 +255,7 @@ describe('SerialLogger', () => {
 
   describe('getTimestamp', () => {
                 it('should return formatted timestamp', async () => {
-      const serialLogger = new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
 
       // Wait a bit to ensure some time has passed
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -258,7 +274,7 @@ describe('SerialLogger', () => {
 
   describe('close', () => {
         it('should close log file and write completion message', async () => {
-      const serialLogger = new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
 
       // Wait for logger initialization
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -270,11 +286,13 @@ describe('SerialLogger', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const logContent = fs.readFileSync(testLogFile, 'utf8');
-      expect(logContent).to.include('=== Log completed at:');
+      const logData = JSON.parse(logContent);
+      expect(logData.metadata.endTime).to.exist;
+      expect(logData.metadata.totalEntries).to.equal(1);
     });
 
     it('should handle close when no log stream exists', async () => {
-      const serialLogger = new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
 
       // Wait for logger initialization
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -289,7 +307,7 @@ describe('SerialLogger', () => {
 
   describe('getLogFilePath', () => {
                 it('should return the log file path', async () => {
-      const serialLogger = new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
 
       expect(serialLogger.getLogFilePath()).to.equal(testLogFile);
 
@@ -303,16 +321,14 @@ describe('SerialLogger', () => {
 });
 
 describe('createLoggingSerialPort', () => {
-  let logger: MockLogLayer;
   let tempDir: TempDir;
   let testLogFile: string;
   let mockPort: any;
 
   beforeEach(() => {
-    logger = new MockLogLayer();
     tempDir = new TempDir();
     tempDir.create('serial-logger-test');
-    testLogFile = tempDir.getFilePath('test.log');
+    testLogFile = tempDir.getFilePath('test.json');
 
     // Create a mock SerialPort
     mockPort = {
@@ -336,7 +352,7 @@ describe('createLoggingSerialPort', () => {
   });
 
              it('should create logging wrapper around SerialPort', async () => {
-      const serialLogger = new SerialLogger(logger, testLogFile);
+      const serialLogger = new SerialLogger(testLogFile);
       const loggingPort = createLoggingSerialPort(mockPort as SerialPort, serialLogger);
 
       expect(loggingPort).to.equal(mockPort);
@@ -349,7 +365,7 @@ describe('createLoggingSerialPort', () => {
     });
 
           it('should log Uint8Array data sent through write method', async () => {
-    const serialLogger = new SerialLogger(logger, testLogFile);
+    const serialLogger = new SerialLogger(testLogFile);
     const loggingPort = createLoggingSerialPort(mockPort as SerialPort, serialLogger);
     const testData = new Uint8Array([0x01, 0x02, 0x03]);
 
@@ -362,18 +378,21 @@ describe('createLoggingSerialPort', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     const logContent = fs.readFileSync(testLogFile, 'utf8');
-    const lines = logContent.split('\n').filter(line => line.trim());
+    const logData = JSON.parse(logContent);
 
-    const logEntry = lines.find(line => line.includes('[SEND]'));
-    expect(logEntry).to.exist;
-    expect(logEntry).to.match(/^\[\d+\.\d+\] \[SEND\] 0102 03$/);
+    expect(logData.entries).to.have.length(1);
+    const entry = logData.entries[0];
+    expect(entry.direction).to.equal('SEND');
+    expect(entry.data).to.deep.equal([1, 2, 3]);
+    expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
+    expect(entry.elapsedMs).to.be.a('number');
 
     // Clean up
     serialLogger.close();
   });
 
       it('should log Buffer data sent through write method', async () => {
-    const serialLogger = new SerialLogger(logger, testLogFile);
+    const serialLogger = new SerialLogger(testLogFile);
     const loggingPort = createLoggingSerialPort(mockPort as SerialPort, serialLogger);
     const testData = Buffer.from([0x01, 0x02, 0x03]);
 
@@ -386,18 +405,21 @@ describe('createLoggingSerialPort', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     const logContent = fs.readFileSync(testLogFile, 'utf8');
-    const lines = logContent.split('\n').filter(line => line.trim());
+    const logData = JSON.parse(logContent);
 
-    const logEntry = lines.find(line => line.includes('[SEND]'));
-    expect(logEntry).to.exist;
-    expect(logEntry).to.match(/^\[\d+\.\d+\] \[SEND\] 0102 03$/);
+    expect(logData.entries).to.have.length(1);
+    const entry = logData.entries[0];
+    expect(entry.direction).to.equal('SEND');
+    expect(entry.data).to.deep.equal([1, 2, 3]);
+    expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
+    expect(entry.elapsedMs).to.be.a('number');
 
     // Clean up
     serialLogger.close();
   });
 
     it('should log string data sent through write method', async () => {
-    const serialLogger = new SerialLogger(logger, testLogFile);
+    const serialLogger = new SerialLogger(testLogFile);
     const loggingPort = createLoggingSerialPort(mockPort as SerialPort, serialLogger);
     const testData = 'Hello';
 
@@ -410,18 +432,21 @@ describe('createLoggingSerialPort', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     const logContent = fs.readFileSync(testLogFile, 'utf8');
-    const lines = logContent.split('\n').filter(line => line.trim());
+    const logData = JSON.parse(logContent);
 
-    const logEntry = lines.find(line => line.includes('[SEND]'));
-    expect(logEntry).to.exist;
-    expect(logEntry).to.match(/^\[\d+\.\d+\] \[SEND\] 4865 6c6c 6f$/);
+    expect(logData.entries).to.have.length(1);
+    const entry = logData.entries[0];
+    expect(entry.direction).to.equal('SEND');
+    expect(entry.data).to.deep.equal([72, 101, 108, 108, 111]); // 'Hello' as byte values
+    expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
+    expect(entry.elapsedMs).to.be.a('number');
 
     // Clean up
     serialLogger.close();
   });
 
     it('should log array data sent through write method', async () => {
-    const serialLogger = new SerialLogger(logger, testLogFile);
+    const serialLogger = new SerialLogger(testLogFile);
     const loggingPort = createLoggingSerialPort(mockPort as SerialPort, serialLogger);
     const testData = [0x01, 0x02, 0x03];
 
@@ -434,18 +459,21 @@ describe('createLoggingSerialPort', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     const logContent = fs.readFileSync(testLogFile, 'utf8');
-    const lines = logContent.split('\n').filter(line => line.trim());
+    const logData = JSON.parse(logContent);
 
-    const logEntry = lines.find(line => line.includes('[SEND]'));
-    expect(logEntry).to.exist;
-    expect(logEntry).to.match(/^\[\d+\.\d+\] \[SEND\] 0102 03$/);
+    expect(logData.entries).to.have.length(1);
+    const entry = logData.entries[0];
+    expect(entry.direction).to.equal('SEND');
+    expect(entry.data).to.deep.equal([1, 2, 3]);
+    expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
+    expect(entry.elapsedMs).to.be.a('number');
 
     // Clean up
     serialLogger.close();
   });
 
   it('should handle write method with callback', async () => {
-    const serialLogger = new SerialLogger(logger, testLogFile);
+    const serialLogger = new SerialLogger(testLogFile);
     const loggingPort = createLoggingSerialPort(mockPort as SerialPort, serialLogger);
     const testData = new Uint8Array([0x01, 0x02, 0x03]);
     let callbackCalled = false;
@@ -466,7 +494,7 @@ describe('createLoggingSerialPort', () => {
   });
 
   it('should handle write method with encoding and callback', async () => {
-    const serialLogger = new SerialLogger(logger, testLogFile);
+    const serialLogger = new SerialLogger(testLogFile);
     const loggingPort = createLoggingSerialPort(mockPort as SerialPort, serialLogger);
     const testData = new Uint8Array([0x01, 0x02, 0x03]);
     let callbackCalled = false;
@@ -487,7 +515,7 @@ describe('createLoggingSerialPort', () => {
   });
 
     it('should log received data through data event', async () => {
-    const serialLogger = new SerialLogger(logger, testLogFile);
+    const serialLogger = new SerialLogger(testLogFile);
     createLoggingSerialPort(mockPort as SerialPort, serialLogger);
     const testData = Buffer.from([0x04, 0x05, 0x06]);
 
@@ -501,18 +529,21 @@ describe('createLoggingSerialPort', () => {
     await new Promise(resolve => setTimeout(resolve, 10));
 
     const logContent = fs.readFileSync(testLogFile, 'utf8');
-    const lines = logContent.split('\n').filter(line => line.trim());
+    const logData = JSON.parse(logContent);
 
-    const logEntry = lines.find(line => line.includes('[RECV]'));
-    expect(logEntry).to.exist;
-    expect(logEntry).to.match(/^\[\d+\.\d+\] \[RECV\] 0405 06$/);
+    expect(logData.entries).to.have.length(1);
+    const entry = logData.entries[0];
+    expect(entry.direction).to.equal('RECV');
+    expect(entry.data).to.deep.equal([4, 5, 6]);
+    expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
+    expect(entry.elapsedMs).to.be.a('number');
 
     // Clean up
     serialLogger.close();
   });
 
   it('should preserve original write method functionality', async () => {
-    const serialLogger = new SerialLogger(logger, testLogFile);
+    const serialLogger = new SerialLogger(testLogFile);
     const loggingPort = createLoggingSerialPort(mockPort as SerialPort, serialLogger);
     const testData = new Uint8Array([0x01, 0x02, 0x03]);
 
