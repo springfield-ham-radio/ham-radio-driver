@@ -210,7 +210,7 @@ export class PatternReceivePatternValidator implements ReceivePatternValidator {
    */
   validate(data: Buffer, pattern: RadioReceivePattern, context?: ProtocolContext): boolean {
     if (pattern.type !== "pattern") return false;
-    const expectedLength = this.getExpectedLength(pattern, context);
+    const expectedLength = this.getExpectedLength(pattern, context, data);
     return data.length >= expectedLength;
   }
 
@@ -232,11 +232,23 @@ export class PatternReceivePatternValidator implements ReceivePatternValidator {
    *
    * @param pattern - The pattern-based response pattern
    * @param context - Optional protocol context for dynamic length calculation
+   * @param receivedData - Optional received data to extract length from
    * @returns The expected total length in bytes
    */
-  getExpectedLength(pattern: RadioReceivePattern, context?: ProtocolContext): number {
+  getExpectedLength(pattern: RadioReceivePattern, context?: ProtocolContext, receivedData?: Buffer): number {
     if (pattern.type !== "pattern") return 1;
     const headerLength = this.calculatePatternHeaderLength(pattern);
+
+    // If we have received data, try to extract the length field from it
+    if (receivedData) {
+      const dataLength = this.extractLengthFromResponse(receivedData, pattern);
+      if (dataLength !== null) {
+        return headerLength + dataLength;
+      }
+      // If we have received data but can't extract length, return header length only
+      // This will cause validation to fail if the data is shorter than expected
+      return headerLength;
+    }
 
     if (context?.currentSegment) {
       return headerLength + context.memoryConfig.chunkSize;
@@ -250,6 +262,39 @@ export class PatternReceivePatternValidator implements ReceivePatternValidator {
     }
 
     return headerLength;
+  }
+
+  /**
+   * Extracts the data length from the received response.
+   *
+   * @param data - The received data
+   * @param pattern - The pattern-based response pattern
+   * @returns The data length or null if not found
+   */
+  private extractLengthFromResponse(data: Buffer, pattern: RadioReceivePattern): number | null {
+    if (pattern.type !== "pattern" || !pattern.pattern) return null;
+
+    let offset = 0;
+    for (const field of pattern.pattern) {
+      if (typeof field === "object" && field.field === "length") {
+        // Check if we have enough data to read the length field
+        if (offset + field.size > data.length) {
+          return null; // Not enough data to read length field
+        }
+        // Extract the length field value (little-endian)
+        let length = 0;
+        for (let i = 0; i < field.size; i++) {
+          length |= (data[offset + i] << (i * 8));
+        }
+        return length;
+      }
+      if (typeof field === "number" || typeof field === "string") {
+        offset += 1;
+      } else if (typeof field === "object") {
+        offset += field.size;
+      }
+    }
+    return null;
   }
 
   /**

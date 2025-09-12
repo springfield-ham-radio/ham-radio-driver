@@ -64,10 +64,11 @@ describe("step-utils", () => {
     it("should reject pattern with insufficient length", () => {
       const pattern = RadioPatternReceivePatternFactory.build();
 
-      // The expected total length is 68 (header 4 + chunkSize 64)
-      // Provide less than 68 bytes to trigger insufficient length
+      // The expected total length is 14 (header 4 + length field 10)
+      // Provide less than 14 bytes to trigger insufficient length
       const responseData = Buffer.alloc(10); // Only 10 bytes, should be insufficient
       responseData[0] = 0x58; // 'X'
+      responseData[3] = 10; // Length field: expect 10 bytes of data
 
       const isValid = validateReceivePattern(responseData, pattern, mockContext);
       expect(isValid).to.be.false;

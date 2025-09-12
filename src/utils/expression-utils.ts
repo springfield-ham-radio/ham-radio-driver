@@ -67,8 +67,9 @@ export const expandMultiByteExpressions = (expressions: (string | number)[], con
         throw new Error(`Multi-byte expression requires a numeric value, got: ${typeof value}`);
       }
 
-      // Convert the number to bytes in little-endian format
-      for (let i = 0; i < size; i++) {
+      // Convert the number to bytes in big-endian format for addresses
+      // Baofeng radios expect addresses in big-endian format (high byte first)
+      for (let i = size - 1; i >= 0; i--) {
         result.push((value >> (i * 8)) & 0xFF);
       }
     } else {

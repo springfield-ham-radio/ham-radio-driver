@@ -187,7 +187,7 @@ export class ReadSegmentExecutor implements StepExecutor {
       endReceived: number[];
     }> = [];
 
-    for (let address = startAddress; address <= endAddress; address += chunkSize) {
+    for (let address = startAddress; address <= endAddress;) {
       if (params.context.progressIndicator?.isCanceled) {
         throw new CancelledException('Radio read was cancelled');
       }
@@ -213,13 +213,8 @@ export class ReadSegmentExecutor implements StepExecutor {
 
       // Extract data from response
       const chunkData = extractDataFromResponse(startReceived, params.startChunk.receive);
-      const remaining = endAddress - address + 1;
-      const expectedChunkLength = Math.min(chunkSize, remaining);
-      if (chunkData.length > expectedChunkLength) {
-        throw new RangeError(
-          `ReadSegmentExecutor: Chunk data too large. address=${address}, offset=${offset}, chunkData.length=${chunkData.length}, expectedChunkLength=${expectedChunkLength}, data.length=${data.length}, startAddress=${startAddress}, endAddress=${endAddress}, chunkSize=${chunkSize}`
-        );
-      }
+
+      // Only validate that we don't exceed the buffer bounds
       if (offset + chunkData.length > data.length) {
         throw new RangeError(
           `ReadSegmentExecutor: Attempt to write beyond buffer bounds. address=${address}, offset=${offset}, chunkData.length=${chunkData.length}, data.length=${data.length}, startAddress=${startAddress}, endAddress=${endAddress}, chunkSize=${chunkSize}`
@@ -240,6 +235,9 @@ export class ReadSegmentExecutor implements StepExecutor {
         endSent: Array.from(endSent || []),
         endReceived: Array.from(endReceived || []),
       });
+
+      // Increment address by the actual amount of data read
+      address += chunkData.length;
     }
 
     // Store the chunk log array in context for UI logging

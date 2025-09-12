@@ -328,8 +328,8 @@ describe('protocol-operations', () => {
 
         operation['sendData'](config, mockContext);
 
-        // 4096 = 0x1000, so bytes are 0x00, 0x10 (little-endian)
-        expect(writtenData).to.deep.equal(new Uint8Array([1, 0, 16, 65]));
+        // 4096 = 0x1000, so bytes are 0x10, 0x00 (big-endian)
+        expect(writtenData).to.deep.equal(new Uint8Array([1, 16, 0, 65]));
       });
 
       it('should handle simple numeric data', () => {

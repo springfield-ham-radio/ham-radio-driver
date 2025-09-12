@@ -28,7 +28,7 @@ describe("validator-factory", () => {
         const validator = ReceivePatternValidatorFactory.getValidator(pattern);
 
         expect(validator.canValidate(pattern)).to.be.true;
-        expect(validator.validate(Buffer.from([0x06, 0x01, 0x02, 0x03]), pattern)).to.be.true;
+        expect(validator.validate(Buffer.from([0x58, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]), pattern)).to.be.true;
       });
 
       it("should return AnyReceivePatternValidator for any patterns", () => {
@@ -84,8 +84,8 @@ describe("validator-factory", () => {
         const pattern = RadioPatternReceivePatternFactory.build();
         const validator = ReceivePatternValidatorFactory.getValidator(pattern);
 
-        expect(validator.validate(Buffer.from([0x06, 0x01, 0x02, 0x03]), pattern)).to.be.true;
-        expect(validator.validate(Buffer.from([0x06, 0x01, 0x02]), pattern)).to.be.false;
+        expect(validator.validate(Buffer.from([0x58, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]), pattern)).to.be.true;
+        expect(validator.validate(Buffer.from([0x58, 0x01, 0x02]), pattern)).to.be.false;
       });
 
       it("should validate any pattern correctly", () => {

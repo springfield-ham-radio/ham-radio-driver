@@ -75,15 +75,30 @@ class MockSerialPort extends EventEmitter {
         return Buffer.from([0x06]);
       } else {
         // For read operations, respond with chunk data
-        const address = (sentData[0] << 8) | sentData[1];
-        const chunkSize = sentData[2];
-        const response = Buffer.alloc(4 + chunkSize);
+        // Address is now sent in big-endian format: sentData[1] is high byte, sentData[2] is low byte
+        const address = (sentData[1] << 8) | sentData[2];
+        const requestedChunkSize = sentData[3];
+
+        // Calculate how many bytes are actually available from this address
+        // For the test, we'll use the test's segment boundaries (0-64 and 128-192)
+        let segmentEndAddress: number;
+        if (address >= 0 && address <= 64) {
+          segmentEndAddress = 64; // Test channel memory segment
+        } else if (address >= 128 && address <= 192) {
+          segmentEndAddress = 192; // Test settings memory segment
+        } else {
+          // Address is outside known segments, return 0 bytes
+          segmentEndAddress = address - 1;
+        }
+        const actualDataLength = Math.max(0, Math.min(requestedChunkSize, segmentEndAddress - address + 1));
+
+        const response = Buffer.alloc(4 + actualDataLength);
         response[0] = 0x58; // 'X'
-        response[1] = (address >> 8) & 0xFF;
-        response[2] = address & 0xFF;
-        response[3] = chunkSize;
+        response[1] = (address >> 8) & 0xFF; // High byte first (big-endian, same as sent)
+        response[2] = address & 0xFF; // Low byte second (big-endian, same as sent)
+        response[3] = actualDataLength; // Actual data length
         // Fill with mock data
-        for (let i = 0; i < chunkSize; i++) {
+        for (let i = 0; i < actualDataLength; i++) {
           response[4 + i] = (address + i) & 0xFF;
         }
         return response;
