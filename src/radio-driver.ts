@@ -4,6 +4,8 @@ import { ProtocolInterpreter } from './protocol-interpreter.js';
 import { SerialPort } from 'serialport';
 import type { UILogger } from '@springfield/ham-radio-utils';
 import { SerialLogger, createLoggingSerialPort } from './utils/index.js';
+import { join } from 'path';
+import { homedir } from 'os';
 
 /**
  * RadioDriver provides high-level operations for reading and writing radio memory
@@ -56,7 +58,11 @@ export class RadioDriver {
     this.uiLogger = uiLogger;
 
     if (enableSerialLogging) {
-      this.serialLogger = new SerialLogger();
+      // Create log file in user's Documents folder for easy access
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const logFileName = `ham-radio-serial-${timestamp}.json`;
+      const logFilePath = join(homedir(), 'Documents', logFileName);
+      this.serialLogger = new SerialLogger(logFilePath);
     }
   }
 
@@ -349,5 +355,25 @@ export class RadioDriver {
    */
   getRadioModel(): string {
     return this.radio.id.model;
+  }
+
+  /**
+   * Gets the path to the serial log file if serial logging is enabled.
+   *
+   * This method returns the file path where serial communication data
+   * is being logged. Returns undefined if serial logging is not enabled.
+   *
+   * @returns The log file path or undefined if logging is disabled
+   *
+   * @example
+   * ```typescript
+   * const logPath = radioDriver.getSerialLogFilePath();
+   * if (logPath) {
+   *   console.log(`Serial log saved to: ${logPath}`);
+   * }
+   * ```
+   */
+  getSerialLogFilePath(): string | undefined {
+    return this.serialLogger?.getLogFilePath();
   }
 }
