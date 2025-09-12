@@ -43,6 +43,10 @@ export class SerialLogger {
   private logFile: string;
   private logData!: SerialLogData;
   private startTime: number;
+  private currentBuffer: number[] = [];
+  private currentDirection: 'SEND' | 'RECV' | null = null;
+  private currentStartTime: number = 0;
+  private currentDescription?: string;
 
   /**
    * Creates a new SerialLogger instance.
@@ -89,25 +93,54 @@ export class SerialLogger {
   }
 
   /**
+   * Flushes the current buffer and creates a log entry if there's buffered data.
+   */
+  private flushBuffer(): void {
+    if (this.currentDirection) {
+      const elapsedMs = this.currentStartTime - this.startTime;
+      const timestamp = this.getTimestamp(this.currentStartTime);
+
+      const entry: LogEntry = {
+        timestamp,
+        elapsedMs,
+        direction: this.currentDirection,
+        data: [...this.currentBuffer],
+        description: this.currentDescription,
+      };
+
+      this.logData.entries.push(entry);
+      this.logData.metadata.totalEntries++;
+
+      // Clear the buffer
+      this.currentBuffer = [];
+      this.currentDirection = null;
+      this.currentDescription = undefined;
+    }
+  }
+
+  /**
    * Logs data being sent to the radio.
    *
    * @param data - The data being sent
    * @param description - Optional description of the operation
    */
   logSend(data: Uint8Array, description?: string): void {
-    const elapsedMs = Date.now() - this.startTime;
-    const timestamp = this.getTimestamp();
+    const currentTime = Date.now();
 
-    const entry: LogEntry = {
-      timestamp,
-      elapsedMs,
-      direction: 'SEND',
-      data: Array.from(data),
-      description,
-    };
+    // If direction changed, flush the current buffer
+    if (this.currentDirection && this.currentDirection !== 'SEND') {
+      this.flushBuffer();
+    }
 
-    this.logData.entries.push(entry);
-    this.logData.metadata.totalEntries++;
+    // If this is the first data or direction changed, set up new buffer
+    if (!this.currentDirection) {
+      this.currentDirection = 'SEND';
+      this.currentStartTime = currentTime;
+      this.currentDescription = description;
+    }
+
+    // Add data to current buffer
+    this.currentBuffer.push(...Array.from(data));
   }
 
   /**
@@ -117,28 +150,33 @@ export class SerialLogger {
    * @param description - Optional description of the operation
    */
   logReceive(data: Uint8Array, description?: string): void {
-    const elapsedMs = Date.now() - this.startTime;
-    const timestamp = this.getTimestamp();
+    const currentTime = Date.now();
 
-    const entry: LogEntry = {
-      timestamp,
-      elapsedMs,
-      direction: 'RECV',
-      data: Array.from(data),
-      description,
-    };
+    // If direction changed, flush the current buffer
+    if (this.currentDirection && this.currentDirection !== 'RECV') {
+      this.flushBuffer();
+    }
 
-    this.logData.entries.push(entry);
-    this.logData.metadata.totalEntries++;
+    // If this is the first data or direction changed, set up new buffer
+    if (!this.currentDirection) {
+      this.currentDirection = 'RECV';
+      this.currentStartTime = currentTime;
+      this.currentDescription = description;
+    }
+
+    // Add data to current buffer
+    this.currentBuffer.push(...Array.from(data));
   }
 
   /**
    * Gets a formatted timestamp relative to the start time.
    *
+   * @param timestamp - Optional timestamp to use instead of current time
    * @returns Formatted timestamp string
    */
-  private getTimestamp(): string {
-    const elapsed = Date.now() - this.startTime;
+  private getTimestamp(timestamp?: number): string {
+    const timeToUse = timestamp || Date.now();
+    const elapsed = timeToUse - this.startTime;
     const seconds = Math.floor(elapsed / 1000);
     const milliseconds = elapsed % 1000;
     return `${seconds.toString().padStart(3, '0')}.${milliseconds.toString().padStart(3, '0')}`;
@@ -148,6 +186,9 @@ export class SerialLogger {
    * Closes the log file and cleans up resources.
    */
   close(): void {
+    // Flush any remaining buffered data
+    this.flushBuffer();
+
     this.logData.metadata.endTime = new Date().toISOString();
     this.writeLogFile();
   }

@@ -233,6 +233,130 @@ describe('SerialLogger', () => {
     });
   });
 
+  describe('buffering', () => {
+    it('should group consecutive send operations into single entry', async () => {
+      const serialLogger = new SerialLogger(testLogFile);
+
+      // Send multiple bytes in separate calls
+      serialLogger.logSend(new Uint8Array([0x01]));
+      serialLogger.logSend(new Uint8Array([0x02]));
+      serialLogger.logSend(new Uint8Array([0x03]));
+
+      // Close to write the file
+      serialLogger.close();
+
+      const logContent = fs.readFileSync(testLogFile, 'utf8');
+      const logData = JSON.parse(logContent);
+
+      expect(logData.entries).to.have.length(1);
+      const entry = logData.entries[0];
+      expect(entry.direction).to.equal('SEND');
+      expect(entry.data).to.deep.equal([1, 2, 3]);
+    });
+
+    it('should group consecutive receive operations into single entry', async () => {
+      const serialLogger = new SerialLogger(testLogFile);
+
+      // Receive multiple bytes in separate calls
+      serialLogger.logReceive(new Uint8Array([0x04]));
+      serialLogger.logReceive(new Uint8Array([0x05]));
+      serialLogger.logReceive(new Uint8Array([0x06]));
+
+      // Close to write the file
+      serialLogger.close();
+
+      const logContent = fs.readFileSync(testLogFile, 'utf8');
+      const logData = JSON.parse(logContent);
+
+      expect(logData.entries).to.have.length(1);
+      const entry = logData.entries[0];
+      expect(entry.direction).to.equal('RECV');
+      expect(entry.data).to.deep.equal([4, 5, 6]);
+    });
+
+    it('should create separate entries when direction changes', async () => {
+      const serialLogger = new SerialLogger(testLogFile);
+
+      // Send some data
+      serialLogger.logSend(new Uint8Array([0x01, 0x02]));
+
+      // Receive some data (direction change)
+      serialLogger.logReceive(new Uint8Array([0x03, 0x04]));
+
+      // Send more data (direction change again)
+      serialLogger.logSend(new Uint8Array([0x05, 0x06]));
+
+      // Close to write the file
+      serialLogger.close();
+
+      const logContent = fs.readFileSync(testLogFile, 'utf8');
+      const logData = JSON.parse(logContent);
+
+      expect(logData.entries).to.have.length(3);
+
+      // First entry: SEND
+      expect(logData.entries[0].direction).to.equal('SEND');
+      expect(logData.entries[0].data).to.deep.equal([1, 2]);
+
+      // Second entry: RECV
+      expect(logData.entries[1].direction).to.equal('RECV');
+      expect(logData.entries[1].data).to.deep.equal([3, 4]);
+
+      // Third entry: SEND
+      expect(logData.entries[2].direction).to.equal('SEND');
+      expect(logData.entries[2].data).to.deep.equal([5, 6]);
+    });
+
+    it('should handle mixed single and multiple byte operations', async () => {
+      const serialLogger = new SerialLogger(testLogFile);
+
+      // Send single byte
+      serialLogger.logSend(new Uint8Array([0x01]));
+
+      // Send multiple bytes
+      serialLogger.logSend(new Uint8Array([0x02, 0x03]));
+
+      // Receive single byte
+      serialLogger.logReceive(new Uint8Array([0x04]));
+
+      // Receive multiple bytes
+      serialLogger.logReceive(new Uint8Array([0x05, 0x06]));
+
+      // Close to write the file
+      serialLogger.close();
+
+      const logContent = fs.readFileSync(testLogFile, 'utf8');
+      const logData = JSON.parse(logContent);
+
+      expect(logData.entries).to.have.length(2);
+
+      // First entry: All SEND operations grouped
+      expect(logData.entries[0].direction).to.equal('SEND');
+      expect(logData.entries[0].data).to.deep.equal([1, 2, 3]);
+
+      // Second entry: All RECV operations grouped
+      expect(logData.entries[1].direction).to.equal('RECV');
+      expect(logData.entries[1].data).to.deep.equal([4, 5, 6]);
+    });
+
+    it('should flush buffer on close even if no direction change', async () => {
+      const serialLogger = new SerialLogger(testLogFile);
+
+      // Send some data but don't close the direction
+      serialLogger.logSend(new Uint8Array([0x01, 0x02]));
+
+      // Close to write the file (should flush buffer)
+      serialLogger.close();
+
+      const logContent = fs.readFileSync(testLogFile, 'utf8');
+      const logData = JSON.parse(logContent);
+
+      expect(logData.entries).to.have.length(1);
+      expect(logData.entries[0].direction).to.equal('SEND');
+      expect(logData.entries[0].data).to.deep.equal([1, 2]);
+    });
+  });
+
   describe('close', () => {
         it('should close log file and write completion message', async () => {
       const serialLogger = new SerialLogger(testLogFile);
