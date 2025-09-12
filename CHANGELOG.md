@@ -1,3 +1,8 @@
+## 1.4.0 (2025-09-12)
+
+* feat: enhance SerialLogger to buffer and group log entries ([617c58b](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/617c58b))
+* test: streamline SerialLogger tests and add static methods for data conversion ([d537a48](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/d537a48))
+
 ## <small>1.3.1 (2025-09-12)</small>
 
 * fix: remove writeLogFile calls from SerialLogger methods ([87dac01](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/87dac01))
