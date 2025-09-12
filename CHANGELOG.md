@@ -1,3 +1,7 @@
+## <small>1.3.1 (2025-09-12)</small>
+
+* fix: remove writeLogFile calls from SerialLogger methods ([87dac01](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/87dac01))
+
 ## 1.3.0 (2025-09-11)
 
 * feat: force version bump ([d576949](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/d576949))
