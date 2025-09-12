@@ -1,3 +1,7 @@
+## 1.5.0 (2025-09-12)
+
+* feat: enhance RadioDriver to support user-specific serial log file paths ([28b1f48](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/28b1f48))
+
 ## 1.4.0 (2025-09-12)
 
 * feat: enhance SerialLogger to buffer and group log entries ([617c58b](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/617c58b))
