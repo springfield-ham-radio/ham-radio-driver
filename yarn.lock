@@ -435,12 +435,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@loglayer/context-manager@npm:1.1.2":
+  version: 1.1.2
+  resolution: "@loglayer/context-manager@npm:1.1.2"
+  dependencies:
+    "@loglayer/shared": "npm:2.4.0"
+  checksum: 10/8d1a1a1e1759d28c4003ea5010a864a652ed76cfc223bde934cfe23619c72dcfa86bfda85832089abd332d78ae71634a335daf69ed6609ad7637aa25c12c1fa7
+  languageName: node
+  linkType: hard
+
 "@loglayer/plugin@npm:2.1.1":
   version: 2.1.1
   resolution: "@loglayer/plugin@npm:2.1.1"
   dependencies:
     "@loglayer/shared": "npm:2.3.1"
   checksum: 10/20824bd2d6e20488f6ad39c4560f7fd1635a0d87a179a666f98f0ba1fbcedb6f78525c4b23a4f520e7a253bc2df7102f1519461efbf45d45ef3a564a282b6bdb
+  languageName: node
+  linkType: hard
+
+"@loglayer/plugin@npm:2.1.2":
+  version: 2.1.2
+  resolution: "@loglayer/plugin@npm:2.1.2"
+  dependencies:
+    "@loglayer/shared": "npm:2.4.0"
+  checksum: 10/1f417d31f82aadbde51d9846a99ae143e2e0aed1feefbc1845237a167d3be55be2eda48270185101659e3494bd40f6e8c2e12e1d768e2613ac88cc106c46cca9
   languageName: node
   linkType: hard
 
@@ -451,12 +469,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@loglayer/shared@npm:2.4.0":
+  version: 2.4.0
+  resolution: "@loglayer/shared@npm:2.4.0"
+  checksum: 10/4b231a87e05b4990dedd07443fff31fa658d42ac19e650efc5964451fee8219d58e7ea5de86b8db131d3fe4abecbc7bcf7debf1e28a669ab176e48da0d93d491
+  languageName: node
+  linkType: hard
+
 "@loglayer/transport@npm:2.2.1":
   version: 2.2.1
   resolution: "@loglayer/transport@npm:2.2.1"
   dependencies:
     "@loglayer/shared": "npm:2.3.1"
   checksum: 10/f1fde6ca2f7537f59a1b6bcd2b8d27c1ae4217d93ffdbb1cb941762f198a7657ee7f6ef73e69f97e0150d55bbf76187f865b5dabda33cb82b3092bf55b493d46
+  languageName: node
+  linkType: hard
+
+"@loglayer/transport@npm:2.2.2":
+  version: 2.2.2
+  resolution: "@loglayer/transport@npm:2.2.2"
+  dependencies:
+    "@loglayer/shared": "npm:2.4.0"
+  checksum: 10/28550f7fe099aa9f2bcb5a2233bd975ea62ffc896498dac0bffb1e76317b6b65dd175732b8bb2bd93139915998422d953af1255d0389e03279d9a82241006e85
   languageName: node
   linkType: hard
 
@@ -1345,7 +1379,7 @@ __metadata:
     chai: "npm:5.3.3"
     fishery: "npm:2.3.1"
     husky: "npm:9.1.7"
-    loglayer: "npm:^6.6.0"
+    loglayer: "npm:^6.7.0"
     oxlint: "npm:1.12.0"
     semantic-release: "npm:24.2.7"
     semantic-release-yarn: "npm:3.0.2"
@@ -3703,6 +3737,18 @@ __metadata:
     "@loglayer/shared": "npm:2.3.1"
     "@loglayer/transport": "npm:2.2.1"
   checksum: 10/65a743b72cbd32d6225924da2acba0de31959e0071959bd35d1c0526330b2371ce82da0bbb865a8d914a8a3f0f1c88f283018c101562f3daae7e9c1d7f285443
+  languageName: node
+  linkType: hard
+
+"loglayer@npm:^6.7.0":
+  version: 6.7.0
+  resolution: "loglayer@npm:6.7.0"
+  dependencies:
+    "@loglayer/context-manager": "npm:1.1.2"
+    "@loglayer/plugin": "npm:2.1.2"
+    "@loglayer/shared": "npm:2.4.0"
+    "@loglayer/transport": "npm:2.2.2"
+  checksum: 10/63a1eab5b8da0ebd09bbb2cf66b88e7afff2bb57985846a34ce4c6220ded2621414db373fb722915910ea286d0edddab2933aeca7b85d6e97ee395b092dacb09
   languageName: node
   linkType: hard
 
