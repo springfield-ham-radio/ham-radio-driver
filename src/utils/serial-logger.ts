@@ -108,7 +108,6 @@ export class SerialLogger {
 
     this.logData.entries.push(entry);
     this.logData.metadata.totalEntries++;
-    this.writeLogFile();
   }
 
   /**
@@ -131,7 +130,6 @@ export class SerialLogger {
 
     this.logData.entries.push(entry);
     this.logData.metadata.totalEntries++;
-    this.writeLogFile();
   }
 
   /**
