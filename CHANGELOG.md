@@ -1,3 +1,8 @@
+## <small>1.5.2 (2025-09-12)</small>
+
+* Merge branch 'renovate/loglayer-6.x' into 'main' ([1c0d4e2](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/1c0d4e2))
+* fix(deps): update dependency loglayer to ^6.7.0 ([8ae29ff](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/8ae29ff))
+
 ## <small>1.5.1 (2025-09-12)</small>
 
 * fix: update ReadSegmentExecutor and expression-utils for big-endian support ([d073262](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/d073262))
