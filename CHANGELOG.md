@@ -1,3 +1,7 @@
+## <small>1.5.1 (2025-09-12)</small>
+
+* fix: update ReadSegmentExecutor and expression-utils for big-endian support ([d073262](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/d073262))
+
 ## 1.5.0 (2025-09-12)
 
 * feat: enhance RadioDriver to support user-specific serial log file paths ([28b1f48](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/28b1f48))
