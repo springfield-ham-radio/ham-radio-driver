@@ -1,3 +1,9 @@
+## 1.6.0 (2025-09-13)
+
+* feat: add getSerialLogData method to RadioDriver and enhance SerialLogger with getLogData method ([2988d03](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/2988d03))
+* Merge branch 'renovate/oxlint-1.x' into 'main' ([f07eb9b](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/f07eb9b))
+* chore(deps): update dependency oxlint to v1.15.0 ([2bdf392](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/2bdf392))
+
 ## <small>1.5.2 (2025-09-12)</small>
 
 * Merge branch 'renovate/loglayer-6.x' into 'main' ([1c0d4e2](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/1c0d4e2))
