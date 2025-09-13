@@ -376,4 +376,24 @@ export class RadioDriver {
   getSerialLogFilePath(): string | undefined {
     return this.serialLogger?.getLogFilePath();
   }
+
+  /**
+   * Gets the serial log data if logging is enabled.
+   *
+   * This method returns the current serial communication log data
+   * as a JSON object. Returns undefined if serial logging is not enabled.
+   *
+   * @returns The serial log data or undefined if logging is disabled
+   *
+   * @example
+   * ```typescript
+   * const logData = radioDriver.getSerialLogData();
+   * if (logData) {
+   *   console.log(`Serial log has ${logData.entries.length} entries`);
+   * }
+   * ```
+   */
+  getSerialLogData(): any | undefined {
+    return this.serialLogger?.getLogData();
+  }
 }

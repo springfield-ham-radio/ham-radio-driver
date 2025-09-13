@@ -203,6 +203,24 @@ export class SerialLogger {
   }
 
   /**
+   * Gets the current log data as a JSON object.
+   * This can be used to get the log data before it's written to the file.
+   *
+   * @returns The current log data structure, or undefined if no data has been logged
+   */
+  getLogData(): SerialLogData | undefined {
+    // Flush any pending buffer before returning data
+    this.flushBuffer();
+
+    // Return undefined if no entries have been logged
+    if (this.logData.entries.length === 0) {
+      return undefined;
+    }
+
+    return JSON.parse(JSON.stringify(this.logData));
+  }
+
+  /**
    * Converts a number array (from JSON) back to a Uint8Array.
    * This is the reverse of Array.from(uint8Array) used when storing data.
    *
