@@ -65,7 +65,7 @@ describe('expression-utils', () => {
     it('should resolve array of context variables', () => {
       const expressions = ['address', 'segment.chunkSize', 'segment.startAddress'];
       const result = resolveExpressions(expressions, mockContext);
-      expect(result).to.deep.equal([0x1000, 64, 0x1000]);
+      expect(result).to.deep.equal([16, 0, 64, 4096]); // address: 0x1000 = [16, 0], chunkSize: 64, startAddress: 4096 (not expanded)
     });
 
     it('should resolve array of character codes', () => {
@@ -77,13 +77,13 @@ describe('expression-utils', () => {
     it('should resolve mixed expression types in array', () => {
       const expressions = [0x01, 'address', "'A'", 'unknown', 0xFF];
       const result = resolveExpressions(expressions, mockContext);
-      expect(result).to.deep.equal([1, 0x1000, 65, 'unknown', 255]);
+      expect(result).to.deep.equal([1, 16, 0, 65, 'unknown', 255]); // address: 0x1000 = [16, 0]
     });
 
     it('should maintain order of expressions', () => {
       const expressions = ['address', 0x01, "'A'", 'segment.chunkSize'];
       const result = resolveExpressions(expressions, mockContext);
-      expect(result).to.deep.equal([0x1000, 1, 65, 64]);
+      expect(result).to.deep.equal([16, 0, 1, 65, 64]); // address: 0x1000 = [16, 0]
     });
 
     it('should handle empty array', () => {
@@ -93,7 +93,7 @@ describe('expression-utils', () => {
 
     it('should handle single element array', () => {
       const result = resolveExpressions(['address'], mockContext);
-      expect(result).to.deep.equal([0x1000]);
+      expect(result).to.deep.equal([16, 0]); // address: 0x1000 = [16, 0]
     });
 
     it('should handle complex data types in context variables', () => {
@@ -120,7 +120,7 @@ describe('expression-utils', () => {
       const result = resolveExpressions(expressions, mockContext);
       expect(result).to.deep.equal([
         1,                       // Resolved number
-        0x1000,                  // Resolved address
+        16, 0,                   // Resolved address: 0x1000 = [16, 0]
         65,                      // Resolved character code
         'unknown',               // Unchanged unknown string
         255,                     // Resolved number

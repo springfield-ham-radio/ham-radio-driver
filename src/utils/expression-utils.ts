@@ -52,7 +52,7 @@ export const expandMultiByteExpressions = (expressions: (string | number)[], con
 
   for (const expr of expressions) {
     if (typeof expr === 'string' && expr.includes(':')) {
-      // This is a multi-byte expression
+      // This is a multi-byte expression with explicit size
       const [valueExpr, sizeStr] = expr.split(':');
       const size = parseInt(sizeStr, 10);
 
@@ -70,6 +70,29 @@ export const expandMultiByteExpressions = (expressions: (string | number)[], con
       // Convert the number to bytes in big-endian format for addresses
       // Baofeng radios expect addresses in big-endian format (high byte first)
       for (let i = size - 1; i >= 0; i--) {
+        result.push((value >> (i * 8)) & 0xFF);
+      }
+    } else if (typeof expr === 'string' && (expr === 'address' || expr.endsWith(':addressSize'))) {
+      // Special case: 'address' or 'field:addressSize' without explicit size uses memoryConfig.addressSize
+      let valueExpr: string;
+      if (expr === 'address') {
+        valueExpr = expr;
+      } else {
+        // Extract the field name from 'field:addressSize'
+        valueExpr = expr.replace(':addressSize', '');
+      }
+
+      const value = ExpressionResolverFactory.resolve(valueExpr, context);
+
+      if (typeof value !== 'number') {
+        throw new Error(`Address expression requires a numeric value, got: ${typeof value}`);
+      }
+
+      // Use the address size from memory config
+      const addressSize = context.memoryConfig.addressSize;
+
+      // Convert the number to bytes in big-endian format for addresses
+      for (let i = addressSize - 1; i >= 0; i--) {
         result.push((value >> (i * 8)) & 0xFF);
       }
     } else {

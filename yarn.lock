@@ -426,30 +426,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@loglayer/context-manager@npm:1.1.1":
-  version: 1.1.1
-  resolution: "@loglayer/context-manager@npm:1.1.1"
-  dependencies:
-    "@loglayer/shared": "npm:2.3.1"
-  checksum: 10/7fcd8106df6b37dbde613e8bc7b5df6feaef92baf9827be8e94bcd2620da00b434e1dbb4ef7181ff1509ecf60cb42655c857967dd2d41029efa86c7872ea05f6
-  languageName: node
-  linkType: hard
-
 "@loglayer/context-manager@npm:1.1.2":
   version: 1.1.2
   resolution: "@loglayer/context-manager@npm:1.1.2"
   dependencies:
     "@loglayer/shared": "npm:2.4.0"
   checksum: 10/8d1a1a1e1759d28c4003ea5010a864a652ed76cfc223bde934cfe23619c72dcfa86bfda85832089abd332d78ae71634a335daf69ed6609ad7637aa25c12c1fa7
-  languageName: node
-  linkType: hard
-
-"@loglayer/plugin@npm:2.1.1":
-  version: 2.1.1
-  resolution: "@loglayer/plugin@npm:2.1.1"
-  dependencies:
-    "@loglayer/shared": "npm:2.3.1"
-  checksum: 10/20824bd2d6e20488f6ad39c4560f7fd1635a0d87a179a666f98f0ba1fbcedb6f78525c4b23a4f520e7a253bc2df7102f1519461efbf45d45ef3a564a282b6bdb
   languageName: node
   linkType: hard
 
@@ -462,26 +444,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@loglayer/shared@npm:2.3.1":
-  version: 2.3.1
-  resolution: "@loglayer/shared@npm:2.3.1"
-  checksum: 10/491d6246b7524cc4d512627d5d5818520a9821c31153a3497b3536ad53f6e6ba4cd078b89581cfc26e26baf81f4695527b8dd2800f804120bc687b7b8d3d29f1
-  languageName: node
-  linkType: hard
-
 "@loglayer/shared@npm:2.4.0":
   version: 2.4.0
   resolution: "@loglayer/shared@npm:2.4.0"
   checksum: 10/4b231a87e05b4990dedd07443fff31fa658d42ac19e650efc5964451fee8219d58e7ea5de86b8db131d3fe4abecbc7bcf7debf1e28a669ab176e48da0d93d491
-  languageName: node
-  linkType: hard
-
-"@loglayer/transport@npm:2.2.1":
-  version: 2.2.1
-  resolution: "@loglayer/transport@npm:2.2.1"
-  dependencies:
-    "@loglayer/shared": "npm:2.3.1"
-  checksum: 10/f1fde6ca2f7537f59a1b6bcd2b8d27c1ae4217d93ffdbb1cb941762f198a7657ee7f6ef73e69f97e0150d55bbf76187f865b5dabda33cb82b3092bf55b493d46
   languageName: node
   linkType: hard
 
@@ -1310,13 +1276,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@springfield/ham-radio-api@npm:^16.1.3":
-  version: 16.1.3
-  resolution: "@springfield/ham-radio-api@npm:16.1.3"
+"@springfield/ham-radio-api@npm:^16.2.0":
+  version: 16.2.0
+  resolution: "@springfield/ham-radio-api@npm:16.2.0"
   dependencies:
-    loglayer: "npm:^6.6.0"
+    loglayer: "npm:^6.7.0"
     ts-brand: "npm:^0.2.0"
-  checksum: 10/aa0ff3e6e684c5ecaf0f81f2c331dd0bb388d439491c6afd54ce2387aae928ebce954a6a8828f15aae7488951bf8389b97432745388ab0b4d74d110fa36016bc
+  checksum: 10/74226717b0f1e323e56febc867f5c369d26d8ac843eaf18ccdad46d3c556b2b83b927df88b6717cf0e530d503aeede253667ca2e3edba28573ab4eea15079daf
   languageName: node
   linkType: hard
 
@@ -1330,16 +1296,16 @@ __metadata:
     "@semantic-release/git": "npm:10.0.1"
     "@semantic-release/gitlab": "npm:13.2.8"
     "@serialport/parser-byte-length": "npm:^13.0.0"
-    "@springfield/ham-radio-api": "npm:^16.1.3"
-    "@springfield/ham-radio-utils": "npm:^3.0.0"
+    "@springfield/ham-radio-api": "npm:^16.2.0"
+    "@springfield/ham-radio-utils": "npm:^3.1.0"
     "@types/chai": "npm:5.2.2"
-    "@types/node": "npm:24.3.0"
-    chai: "npm:5.3.3"
+    "@types/node": "npm:24.3.3"
+    chai: "npm:6.0.1"
     fishery: "npm:2.3.1"
     husky: "npm:9.1.7"
     loglayer: "npm:^6.7.0"
     oxlint: "npm:1.15.0"
-    semantic-release: "npm:24.2.7"
+    semantic-release: "npm:24.2.8"
     semantic-release-yarn: "npm:3.0.2"
     serialport: "npm:^13.0.0"
     tsx: "npm:4.20.5"
@@ -1347,17 +1313,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@springfield/ham-radio-utils@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "@springfield/ham-radio-utils@npm:3.0.0"
+"@springfield/ham-radio-utils@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "@springfield/ham-radio-utils@npm:3.1.0"
   dependencies:
-    "@springfield/ham-radio-api": "npm:^16.1.3"
+    "@springfield/ham-radio-api": "npm:^16.2.0"
     ajv: "npm:^8.17.1"
     ajv-formats: "npm:^3.0.1"
     fishery: "npm:^2.3.1"
-    loglayer: "npm:^6.6.0"
+    loglayer: "npm:^6.7.0"
     sprintf-js: "npm:^1.1.3"
-  checksum: 10/7ebba3083fd744f9483ed009913cbba9204990f6f013f5e587b39a5b9785b2670c5706e01cb771a94e5e4fb40cfc0633996f886cddeea3aaffcfd6f210d1733c
+  checksum: 10/ea1ef80dcca8c628f6a06d922007bc25b827412d299469e9d3d35f740b964517e4a46b15dd14ec0d91601a82ed3699cd116f0ca3a9bf060f04757158a24d0d6d
   languageName: node
   linkType: hard
 
@@ -1428,12 +1394,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:24.3.0":
-  version: 24.3.0
-  resolution: "@types/node@npm:24.3.0"
+"@types/node@npm:24.3.3":
+  version: 24.3.3
+  resolution: "@types/node@npm:24.3.3"
   dependencies:
     undici-types: "npm:~7.10.0"
-  checksum: 10/1331c2d0e9a512ac27a016b4df3eff92317e4603dbbbab31731275dff14d3a04847a50c5776cbf94f99ff4dedac0ba5f721dce8cea020d8eea5e21711fd964b0
+  checksum: 10/6e6614a0f0fad14aa79094fd0372a70adce61f2c196c26220460d99e27c18ff52ed0ac2b446b552a98b5d5a60e0502a0d9bf8c793800fefb29426eebf661d9a3
   languageName: node
   linkType: hard
 
@@ -1606,13 +1572,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"assertion-error@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "assertion-error@npm:2.0.1"
-  checksum: 10/a0789dd882211b87116e81e2648ccb7f60340b34f19877dd020b39ebb4714e475eb943e14ba3e22201c221ef6645b7bfe10297e76b6ac95b48a9898c1211ce66
-  languageName: node
-  linkType: hard
-
 "balanced-match@npm:^1.0.0":
   version: 1.0.2
   resolution: "balanced-match@npm:1.0.2"
@@ -1721,16 +1680,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chai@npm:5.3.3":
-  version: 5.3.3
-  resolution: "chai@npm:5.3.3"
-  dependencies:
-    assertion-error: "npm:^2.0.1"
-    check-error: "npm:^2.1.1"
-    deep-eql: "npm:^5.0.1"
-    loupe: "npm:^3.1.0"
-    pathval: "npm:^2.0.0"
-  checksum: 10/0d0ef63106083b05c7ba510697cd9991a02b8df5984a7d010ab4af10205c7a1f27d1c06bfa4679540894295ac4dcc22aa2a281e2e4cfe5133c1db379626689a2
+"chai@npm:6.0.1":
+  version: 6.0.1
+  resolution: "chai@npm:6.0.1"
+  checksum: 10/cd95aee5f98cdeaea3e24c21dcf1786d9eaf515d571861106a2378589cf5ef1ed3ddd223ca1121552656ffd744e4acd051f8881c1a9729c71551776db55fb2cb
   languageName: node
   linkType: hard
 
@@ -1766,13 +1719,6 @@ __metadata:
   version: 1.0.2
   resolution: "char-regex@npm:1.0.2"
   checksum: 10/1ec5c2906adb9f84e7f6732a40baef05d7c85401b82ffcbc44b85fbd0f7a2b0c2a96f2eb9cf55cae3235dc12d4023003b88f09bcae8be9ae894f52ed746f4d48
-  languageName: node
-  linkType: hard
-
-"check-error@npm:^2.1.1":
-  version: 2.1.1
-  resolution: "check-error@npm:2.1.1"
-  checksum: 10/d785ed17b1d4a4796b6e75c765a9a290098cf52ff9728ce0756e8ffd4293d2e419dd30c67200aee34202463b474306913f2fcfaf1890641026d9fc6966fea27a
   languageName: node
   linkType: hard
 
@@ -2156,13 +2102,6 @@ __metadata:
   dependencies:
     mimic-response: "npm:^3.1.0"
   checksum: 10/d377cf47e02d805e283866c3f50d3d21578b779731e8c5072d6ce8c13cc31493db1c2f6784da9d1d5250822120cefa44f1deab112d5981015f2e17444b763812
-  languageName: node
-  linkType: hard
-
-"deep-eql@npm:^5.0.1":
-  version: 5.0.2
-  resolution: "deep-eql@npm:5.0.2"
-  checksum: 10/a529b81e2ef8821621d20a36959a0328873a3e49d393ad11f8efe8559f31239494c2eb889b80342808674c475802ba95b9d6c4c27641b9a029405104c1b59fcf
   languageName: node
   linkType: hard
 
@@ -2877,10 +2816,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hook-std@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "hook-std@npm:3.0.0"
-  checksum: 10/f1f0ca88bbbca2306b9c2c342f45fbecb318ad5496bcbde1fcfc2a64dab0feabd50278a613f683edf07225c4b8b75b3c64ad3f1fca090dd0cae426fdec374a56
+"hook-std@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "hook-std@npm:4.0.0"
+  checksum: 10/82a3becad2e7ec3a9da25eb26dbfa584015f5bfabaddc6c999f079e6c65166e6902f37783819b996be4621cec30945cc6468c539134184e7b265196964488467
   languageName: node
   linkType: hard
 
@@ -3686,18 +3625,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"loglayer@npm:^6.6.0":
-  version: 6.6.0
-  resolution: "loglayer@npm:6.6.0"
-  dependencies:
-    "@loglayer/context-manager": "npm:1.1.1"
-    "@loglayer/plugin": "npm:2.1.1"
-    "@loglayer/shared": "npm:2.3.1"
-    "@loglayer/transport": "npm:2.2.1"
-  checksum: 10/65a743b72cbd32d6225924da2acba0de31959e0071959bd35d1c0526330b2371ce82da0bbb865a8d914a8a3f0f1c88f283018c101562f3daae7e9c1d7f285443
-  languageName: node
-  linkType: hard
-
 "loglayer@npm:^6.7.0":
   version: 6.7.0
   resolution: "loglayer@npm:6.7.0"
@@ -3707,13 +3634,6 @@ __metadata:
     "@loglayer/shared": "npm:2.4.0"
     "@loglayer/transport": "npm:2.2.2"
   checksum: 10/63a1eab5b8da0ebd09bbb2cf66b88e7afff2bb57985846a34ce4c6220ded2621414db373fb722915910ea286d0edddab2933aeca7b85d6e97ee395b092dacb09
-  languageName: node
-  linkType: hard
-
-"loupe@npm:^3.1.0":
-  version: 3.1.4
-  resolution: "loupe@npm:3.1.4"
-  checksum: 10/06ab1893731f167f2ce71f464a8a68372dc4cb807ecae20f9b844660c93813a298ca76bcd747ba6568b057af725ea63f0034ba3140c8f1d1fbb482d797e593ef
   languageName: node
   linkType: hard
 
@@ -4728,13 +4648,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pathval@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "pathval@npm:2.0.0"
-  checksum: 10/b91575bf9cdf01757afd7b5e521eb8a0b874a49bc972d08e0047cfea0cd3c019f5614521d4bc83d2855e3fcc331db6817dfd533dd8f3d90b16bc76fad2450fc1
-  languageName: node
-  linkType: hard
-
 "picocolors@npm:^1.1.1":
   version: 1.1.1
   resolution: "picocolors@npm:1.1.1"
@@ -5091,9 +5004,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"semantic-release@npm:24.2.7":
-  version: 24.2.7
-  resolution: "semantic-release@npm:24.2.7"
+"semantic-release@npm:24.2.8":
+  version: 24.2.8
+  resolution: "semantic-release@npm:24.2.8"
   dependencies:
     "@semantic-release/commit-analyzer": "npm:^13.0.0-beta.1"
     "@semantic-release/error": "npm:^4.0.0"
@@ -5109,7 +5022,7 @@ __metadata:
     find-versions: "npm:^6.0.0"
     get-stream: "npm:^6.0.0"
     git-log-parser: "npm:^1.2.0"
-    hook-std: "npm:^3.0.0"
+    hook-std: "npm:^4.0.0"
     hosted-git-info: "npm:^8.0.0"
     import-from-esm: "npm:^2.0.0"
     lodash-es: "npm:^4.17.21"
@@ -5126,7 +5039,7 @@ __metadata:
     yargs: "npm:^17.5.1"
   bin:
     semantic-release: bin/semantic-release.js
-  checksum: 10/756bae4989129ca35478043febabb2a0c72fa38406b37813c698d6675604ec79f468a495160fc618e065e2fed9151f89b1c91a1a25d56fd89341c2f5aa96bab5
+  checksum: 10/11ed07b36dac744561c179b7b43ebf1a4dfb46de28626d1f556f18164054908d4d261ee9c2f1095cfa90b884c44f5088d1699cd677d19a3527bfe84b83ee52b7
   languageName: node
   linkType: hard
 

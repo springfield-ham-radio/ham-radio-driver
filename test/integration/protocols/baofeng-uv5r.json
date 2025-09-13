@@ -10,6 +10,7 @@
   },
   "memoryConfig": {
     "chunkSize": 64,
+    "addressSize": 2,
     "segments": {
       "channels": {
         "startAddress": 0,
@@ -77,7 +78,7 @@
         "startChunk": {
           "send": [
             "S",
-            "address:2",
+            "address",
             "segment.chunkSize"
           ],
           "receive": {
@@ -141,7 +142,7 @@
         ],
         "send": [
           "X",
-          "segment.startAddress:2",
+          "segment.startAddress:addressSize",
           "segment.chunkSize"
         ],
         "data": "segment.data",
