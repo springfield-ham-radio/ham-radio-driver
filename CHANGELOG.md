@@ -1,3 +1,7 @@
+## 1.7.0 (2025-09-13)
+
+* feat: update dependencies and enhance memory configuration ([03b15e0](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/03b15e0))
+
 ## 1.6.0 (2025-09-13)
 
 * feat: add getSerialLogData method to RadioDriver and enhance SerialLogger with getLogData method ([2988d03](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/2988d03))
