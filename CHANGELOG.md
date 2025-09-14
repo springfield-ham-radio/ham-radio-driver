@@ -1,3 +1,7 @@
+## 1.8.0 (2025-09-14)
+
+* feat: enhance memory configuration and address handling ([b8604d0](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/b8604d0))
+
 ## 1.7.0 (2025-09-13)
 
 * feat: update dependencies and enhance memory configuration ([03b15e0](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/03b15e0))
