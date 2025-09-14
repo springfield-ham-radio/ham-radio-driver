@@ -242,6 +242,8 @@ const baofengUV5RRadio: Radio = {
   },
   memoryConfig: {
     chunkSize: 64,
+    addressSize: 2,
+    addressEndianness: 'big',
     segments: {
       channels: {
         startAddress: 0,
@@ -290,7 +292,7 @@ const baofengUV5RRadio: Radio = {
       readSegment: {
         segments: ['channels', 'settings'],
         startChunk: {
-          send: ['S', 'address:2', 'segment.chunkSize'],
+          send: ['S', 'address', 'segment.chunkSize'],
           receive: {
             type: 'pattern',
             pattern: [
@@ -337,7 +339,7 @@ const baofengUV5RRadio: Radio = {
     {
       writeSegment: {
         segments: ['channels', 'settings'],
-        send: ['X', 'segment.startAddress:2', 'segment.chunkSize'],
+        send: ['X', 'segment.startAddress', 'segment.chunkSize'],
         data: 'segment.data',
         receive: {
           type: 'exact',
