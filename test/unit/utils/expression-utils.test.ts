@@ -120,7 +120,7 @@ describe('expression-utils', () => {
       const result = resolveExpressions(expressions, mockContext);
       expect(result).to.deep.equal([
         1,                       // Resolved number
-        16, 0,                   // Resolved address: 0x1000 = [16, 0]
+        16, 0,                   // Resolved address: 0x1000 = [16, 0] (big-endian)
         65,                      // Resolved character code
         'unknown',               // Unchanged unknown string
         255,                     // Resolved number
@@ -128,6 +128,102 @@ describe('expression-utils', () => {
         48,                      // Resolved character code
         Uint8ArrayFactory.build() // Resolved segment data
       ]);
+    });
+
+    it('should handle big-endian address expansion', () => {
+      const bigEndianContext = ProtocolContextFactory.build({
+        memoryConfig: {
+          chunkSize: 64,
+          addressSize: 2,
+          addressEndianness: 'big',
+          segments: {
+            "test-segment": {
+              startAddress: 0x1000,
+              endAddress: 0x2000,
+            },
+          },
+        }
+      });
+
+      const expressions = ['address'];
+      const result = resolveExpressions(expressions, bigEndianContext);
+      expect(result).to.deep.equal([16, 0]); // 0x1000 = [16, 0] in big-endian
+    });
+
+    it('should handle little-endian address expansion', () => {
+      const littleEndianContext = ProtocolContextFactory.build({
+        memoryConfig: {
+          chunkSize: 64,
+          addressSize: 2,
+          addressEndianness: 'little',
+          segments: {
+            "test-segment": {
+              startAddress: 0x1000,
+              endAddress: 0x2000,
+            },
+          },
+        }
+      });
+
+      const expressions = ['address'];
+      const result = resolveExpressions(expressions, littleEndianContext);
+      expect(result).to.deep.equal([0, 16]); // 0x1000 = [0, 16] in little-endian
+    });
+
+    it('should handle 4-byte addresses with big-endian', () => {
+      const bigEndianContext = ProtocolContextFactory.build({
+        currentSegment: {
+          name: "test-segment",
+          currentAddress: 0x12345678,
+          config: {
+            startAddress: 0x1000,
+            endAddress: 0x2000,
+          },
+        },
+        memoryConfig: {
+          chunkSize: 64,
+          addressSize: 4,
+          addressEndianness: 'big',
+          segments: {
+            "test-segment": {
+              startAddress: 0x1000,
+              endAddress: 0x2000,
+            },
+          },
+        }
+      });
+
+      const expressions = ['address'];
+      const result = resolveExpressions(expressions, bigEndianContext);
+      expect(result).to.deep.equal([18, 52, 86, 120]); // 0x12345678 in big-endian
+    });
+
+    it('should handle 4-byte addresses with little-endian', () => {
+      const littleEndianContext = ProtocolContextFactory.build({
+        currentSegment: {
+          name: "test-segment",
+          currentAddress: 0x12345678,
+          config: {
+            startAddress: 0x1000,
+            endAddress: 0x2000,
+          },
+        },
+        memoryConfig: {
+          chunkSize: 64,
+          addressSize: 4,
+          addressEndianness: 'little',
+          segments: {
+            "test-segment": {
+              startAddress: 0x1000,
+              endAddress: 0x2000,
+            },
+          },
+        }
+      });
+
+      const expressions = ['address'];
+      const result = resolveExpressions(expressions, littleEndianContext);
+      expect(result).to.deep.equal([120, 86, 52, 18]); // 0x12345678 in little-endian
     });
   });
 });

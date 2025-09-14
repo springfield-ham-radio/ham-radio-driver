@@ -15,6 +15,7 @@ import { ExpressionResolverFactory } from "./expression-resolvers.js";
  * - Integrates with the ExpressionResolverFactory for complex resolution
  * - Supports context variable references and character code conversions
  * - Supports multi-byte expressions for addresses and other multi-byte values
+ * - Configurable endianness (big-endian or little-endian) for address byte ordering
  *
  * Design Rationale:
  * - Expression resolution allows protocols to be dynamic and context-aware
@@ -23,6 +24,7 @@ import { ExpressionResolverFactory } from "./expression-resolvers.js";
  * - Integration with ExpressionResolverFactory provides extensible resolution
  * - Type safety ensures expressions resolve to appropriate value types
  * - Multi-byte support enables proper handling of addresses and other multi-byte values
+ * - Configurable endianness ensures compatibility with different radio architectures
  *
  * Usage:
  * These utilities are used by protocol executors to resolve dynamic values
@@ -44,7 +46,8 @@ import { ExpressionResolverFactory } from "./expression-resolvers.js";
  * Example:
  * ```typescript
  * const expanded = expandMultiByteExpressions(['S', 'address:2', 64], context);
- * // Returns: ['S', highByte, lowByte, 64] for address 0x1000
+ * // Returns: ['S', highByte, lowByte, 64] for address 0x1000 (big-endian)
+ * // or ['S', lowByte, highByte, 64] for address 0x1000 (little-endian)
  * ```
  */
 export const expandMultiByteExpressions = (expressions: (string | number)[], context: ProtocolContext): (string | number)[] => {
@@ -67,10 +70,17 @@ export const expandMultiByteExpressions = (expressions: (string | number)[], con
         throw new Error(`Multi-byte expression requires a numeric value, got: ${typeof value}`);
       }
 
-      // Convert the number to bytes in big-endian format for addresses
-      // Baofeng radios expect addresses in big-endian format (high byte first)
-      for (let i = size - 1; i >= 0; i--) {
-        result.push((value >> (i * 8)) & 0xFF);
+      // Convert the number to bytes in the specified endianness format
+      if (context.memoryConfig.addressEndianness === 'big') {
+        // Big-endian: high byte first
+        for (let i = size - 1; i >= 0; i--) {
+          result.push((value >> (i * 8)) & 0xFF);
+        }
+      } else {
+        // Little-endian: low byte first
+        for (let i = 0; i < size; i++) {
+          result.push((value >> (i * 8)) & 0xFF);
+        }
       }
     } else if (typeof expr === 'string' && (expr === 'address' || expr.endsWith(':addressSize'))) {
       // Special case: 'address' or 'field:addressSize' without explicit size uses memoryConfig.addressSize
@@ -88,12 +98,21 @@ export const expandMultiByteExpressions = (expressions: (string | number)[], con
         throw new Error(`Address expression requires a numeric value, got: ${typeof value}`);
       }
 
-      // Use the address size from memory config
+      // Use the address size and endianness from memory config
       const addressSize = context.memoryConfig.addressSize;
+      const endianness = context.memoryConfig.addressEndianness;
 
-      // Convert the number to bytes in big-endian format for addresses
-      for (let i = addressSize - 1; i >= 0; i--) {
-        result.push((value >> (i * 8)) & 0xFF);
+      // Convert the number to bytes in the specified endianness format
+      if (endianness === 'big') {
+        // Big-endian: high byte first
+        for (let i = addressSize - 1; i >= 0; i--) {
+          result.push((value >> (i * 8)) & 0xFF);
+        }
+      } else {
+        // Little-endian: low byte first
+        for (let i = 0; i < addressSize; i++) {
+          result.push((value >> (i * 8)) & 0xFF);
+        }
       }
     } else {
       // Regular expression, resolve normally

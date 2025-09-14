@@ -20,6 +20,7 @@ const baofengRadio: Radio = {
   memoryConfig: {
     chunkSize: 64,
     addressSize: 2,
+    addressEndianness: 'big',
     segments: {
       channels: {
         endAddress: 6143,

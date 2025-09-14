@@ -15,6 +15,7 @@ export const ProtocolContextFactory = Factory.define<ProtocolContext>(() => ({
   memoryConfig: {
     chunkSize: 64,
     addressSize: 2,
+    addressEndianness: 'big',
     segments: {
       "test-segment": {
         startAddress: 0x1000,
@@ -74,6 +75,7 @@ export const RadioMemorySegmentFactory = Factory.define<RadioMemorySegment>(() =
 export const RadioMemoryConfigFactory = Factory.define<RadioMemoryConfig>(() => ({
   chunkSize: 64,
   addressSize: 2,
+  addressEndianness: 'big',
   segments: {
     "test-segment": {
       startAddress: 0x1000,
