@@ -1,3 +1,19 @@
+## <small>1.8.1 (2025-10-29)</small>
+
+* Merge branch 'renovate/chai-6.x' into 'main' ([ed96a30](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/ed96a30))
+* Merge branch 'renovate/oxlint-1.x' into 'main' ([8ec9086](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/8ec9086))
+* Merge branch 'renovate/oxlint-1.x' into 'main' ([f128f54](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/f128f54))
+* Merge branch 'renovate/semantic-release-monorepo' into 'main' ([f4d54e7](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/f4d54e7))
+* Merge branch 'renovate/springfield-ham-radio-api-16.x' into 'main' ([83e1c5e](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/83e1c5e))
+* Merge branch 'renovate/tsx-4.x' into 'main' ([d73af63](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/d73af63))
+* fix(deps): update dependency @springfield/ham-radio-api to ^16.3.1 ([8efdc61](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/8efdc61))
+* chore(deps): update dependency @semantic-release/gitlab to v13.2.9 ([d571e47](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/d571e47))
+* chore(deps): update dependency chai to v6.2.0 ([2f051dd](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/2f051dd))
+* chore(deps): update dependency oxlint to v1.19.0 ([8e1ba5b](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/8e1ba5b))
+* chore(deps): update dependency oxlint to v1.23.0 ([df90593](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/df90593))
+* chore(deps): update dependency tsx to v4.20.6 ([d56d169](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/d56d169))
+* test: remove outdated radio driver JSON files and update integration tests ([8cc2d9b](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/8cc2d9b))
+
 ## 1.8.0 (2025-09-14)
 
 * feat: enhance memory configuration and address handling ([b8604d0](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/b8604d0))
