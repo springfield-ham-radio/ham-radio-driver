@@ -435,12 +435,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@loglayer/context-manager@npm:1.1.6":
+  version: 1.1.6
+  resolution: "@loglayer/context-manager@npm:1.1.6"
+  dependencies:
+    "@loglayer/shared": "npm:2.5.3"
+  checksum: 10/7a12200abcaa039acc41abeb5f42c3cbdba3c0417398c9eb9e36f5f649d3ae1d6ec57756ce8c2595c3157d0f28093284437a9ad2bbe4fb9e460158068c61646e
+  languageName: node
+  linkType: hard
+
 "@loglayer/plugin@npm:2.1.2":
   version: 2.1.2
   resolution: "@loglayer/plugin@npm:2.1.2"
   dependencies:
     "@loglayer/shared": "npm:2.4.0"
   checksum: 10/1f417d31f82aadbde51d9846a99ae143e2e0aed1feefbc1845237a167d3be55be2eda48270185101659e3494bd40f6e8c2e12e1d768e2613ac88cc106c46cca9
+  languageName: node
+  linkType: hard
+
+"@loglayer/plugin@npm:2.1.6":
+  version: 2.1.6
+  resolution: "@loglayer/plugin@npm:2.1.6"
+  dependencies:
+    "@loglayer/shared": "npm:2.5.3"
+  checksum: 10/82c47d18718429a4dac581bd4e0cdbc7b97e1ce7406622b1403633128bbdd41c72359c4c1b090d37b032eedacf73070165264de695de8457a9d664e8f6263c92
   languageName: node
   linkType: hard
 
@@ -451,12 +469,28 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@loglayer/shared@npm:2.5.3":
+  version: 2.5.3
+  resolution: "@loglayer/shared@npm:2.5.3"
+  checksum: 10/4d6b7d189c77875ee69b4383b22b3fdbdcbd5df5a2a5c4b1f75380ac9e69bcc53c0896627a6e37e87936972c9b3f146fa573862cc092f6ae14c231df802e4b65
+  languageName: node
+  linkType: hard
+
 "@loglayer/transport@npm:2.2.2":
   version: 2.2.2
   resolution: "@loglayer/transport@npm:2.2.2"
   dependencies:
     "@loglayer/shared": "npm:2.4.0"
   checksum: 10/28550f7fe099aa9f2bcb5a2233bd975ea62ffc896498dac0bffb1e76317b6b65dd175732b8bb2bd93139915998422d953af1255d0389e03279d9a82241006e85
+  languageName: node
+  linkType: hard
+
+"@loglayer/transport@npm:2.3.4":
+  version: 2.3.4
+  resolution: "@loglayer/transport@npm:2.3.4"
+  dependencies:
+    "@loglayer/shared": "npm:2.5.3"
+  checksum: 10/50b05f7b676a27a43ee330b8789157ca1bd2d3638f430e834b275038c8debc2a5726c050931309f6a0743d479fc12f099dc5ec91cd62bb2a9596d41ccf5bdea4
   languageName: node
   linkType: hard
 
@@ -1286,6 +1320,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@springfield/ham-radio-api@npm:^16.3.1":
+  version: 16.3.1
+  resolution: "@springfield/ham-radio-api@npm:16.3.1"
+  dependencies:
+    loglayer: "npm:^6.9.1"
+    ts-brand: "npm:^0.2.0"
+  checksum: 10/98304a7ba752db58bbd611fd44999f07bf0203ca1524088a6ea54e47ab0eb369f08223719f3cde69e96647910193114824537208810e3b545ba686b9c3fda905
+  languageName: node
+  linkType: hard
+
 "@springfield/ham-radio-driver@workspace:.":
   version: 0.0.0-use.local
   resolution: "@springfield/ham-radio-driver@workspace:."
@@ -1296,7 +1340,7 @@ __metadata:
     "@semantic-release/git": "npm:10.0.1"
     "@semantic-release/gitlab": "npm:13.2.9"
     "@serialport/parser-byte-length": "npm:^13.0.0"
-    "@springfield/ham-radio-api": "npm:^16.3.0"
+    "@springfield/ham-radio-api": "npm:^16.3.1"
     "@springfield/ham-radio-utils": "npm:^3.2.0"
     "@types/chai": "npm:5.2.2"
     "@types/node": "npm:24.3.3"
@@ -3634,6 +3678,18 @@ __metadata:
     "@loglayer/shared": "npm:2.4.0"
     "@loglayer/transport": "npm:2.2.2"
   checksum: 10/63a1eab5b8da0ebd09bbb2cf66b88e7afff2bb57985846a34ce4c6220ded2621414db373fb722915910ea286d0edddab2933aeca7b85d6e97ee395b092dacb09
+  languageName: node
+  linkType: hard
+
+"loglayer@npm:^6.9.1":
+  version: 6.10.0
+  resolution: "loglayer@npm:6.10.0"
+  dependencies:
+    "@loglayer/context-manager": "npm:1.1.6"
+    "@loglayer/plugin": "npm:2.1.6"
+    "@loglayer/shared": "npm:2.5.3"
+    "@loglayer/transport": "npm:2.3.4"
+  checksum: 10/6429a4d61e882d3a4b8c77e36a45176ca34a005d7366aa40260a9def3763cd76d0668a88028d119a8d46063ea1a7eab42c598dc49e45686d85a2e7f20cbf21a4
   languageName: node
   linkType: hard
 
