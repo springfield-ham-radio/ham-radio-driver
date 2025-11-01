@@ -1,3 +1,10 @@
+## <small>1.8.2 (2025-11-01)</small>
+
+* Merge branch 'renovate/chai-5.x' into 'main' ([a80f6b6](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/a80f6b6))
+* Merge branch 'renovate/springfield-ham-radio-api-16.x' into 'main' ([501e2f7](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/501e2f7))
+* fix(deps): update dependency @springfield/ham-radio-api to ^16.3.2 ([f7d2ee4](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/f7d2ee4))
+* chore(deps): update dependency @types/chai to v5.2.3 ([44bbc55](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/44bbc55))
+
 ## <small>1.8.1 (2025-10-29)</small>
 
 * Merge branch 'renovate/chai-6.x' into 'main' ([ed96a30](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/ed96a30))
