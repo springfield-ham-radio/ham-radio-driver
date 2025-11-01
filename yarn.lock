@@ -1320,13 +1320,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@springfield/ham-radio-api@npm:^16.3.1":
-  version: 16.3.1
-  resolution: "@springfield/ham-radio-api@npm:16.3.1"
+"@springfield/ham-radio-api@npm:^16.3.2":
+  version: 16.3.2
+  resolution: "@springfield/ham-radio-api@npm:16.3.2"
   dependencies:
-    loglayer: "npm:^6.9.1"
+    loglayer: "npm:^6.10.0"
     ts-brand: "npm:^0.2.0"
-  checksum: 10/98304a7ba752db58bbd611fd44999f07bf0203ca1524088a6ea54e47ab0eb369f08223719f3cde69e96647910193114824537208810e3b545ba686b9c3fda905
+  checksum: 10/bdf781a3502b401c2fc3fbb00d4b18558f8481543033e63466200362a3a4850a56904b49d4bae4287dea5f32a286fb8520ae47798c4334e2b21622b9484f1f0b
   languageName: node
   linkType: hard
 
@@ -1340,7 +1340,7 @@ __metadata:
     "@semantic-release/git": "npm:10.0.1"
     "@semantic-release/gitlab": "npm:13.2.9"
     "@serialport/parser-byte-length": "npm:^13.0.0"
-    "@springfield/ham-radio-api": "npm:^16.3.1"
+    "@springfield/ham-radio-api": "npm:^16.3.2"
     "@springfield/ham-radio-utils": "npm:^3.2.0"
     "@types/chai": "npm:5.2.2"
     "@types/node": "npm:24.3.3"
@@ -3669,6 +3669,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"loglayer@npm:^6.10.0":
+  version: 6.10.0
+  resolution: "loglayer@npm:6.10.0"
+  dependencies:
+    "@loglayer/context-manager": "npm:1.1.6"
+    "@loglayer/plugin": "npm:2.1.6"
+    "@loglayer/shared": "npm:2.5.3"
+    "@loglayer/transport": "npm:2.3.4"
+  checksum: 10/6429a4d61e882d3a4b8c77e36a45176ca34a005d7366aa40260a9def3763cd76d0668a88028d119a8d46063ea1a7eab42c598dc49e45686d85a2e7f20cbf21a4
+  languageName: node
+  linkType: hard
+
 "loglayer@npm:^6.7.0":
   version: 6.7.0
   resolution: "loglayer@npm:6.7.0"
@@ -3678,18 +3690,6 @@ __metadata:
     "@loglayer/shared": "npm:2.4.0"
     "@loglayer/transport": "npm:2.2.2"
   checksum: 10/63a1eab5b8da0ebd09bbb2cf66b88e7afff2bb57985846a34ce4c6220ded2621414db373fb722915910ea286d0edddab2933aeca7b85d6e97ee395b092dacb09
-  languageName: node
-  linkType: hard
-
-"loglayer@npm:^6.9.1":
-  version: 6.10.0
-  resolution: "loglayer@npm:6.10.0"
-  dependencies:
-    "@loglayer/context-manager": "npm:1.1.6"
-    "@loglayer/plugin": "npm:2.1.6"
-    "@loglayer/shared": "npm:2.5.3"
-    "@loglayer/transport": "npm:2.3.4"
-  checksum: 10/6429a4d61e882d3a4b8c77e36a45176ca34a005d7366aa40260a9def3763cd76d0668a88028d119a8d46063ea1a7eab42c598dc49e45686d85a2e7f20cbf21a4
   languageName: node
   linkType: hard
 
