@@ -1,3 +1,9 @@
+## <small>1.8.3 (2025-12-17)</small>
+
+* fix: update dependencies ([ce91df7](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/ce91df7))
+* Merge branch 'renovate/oxlint-1.x' into 'main' ([f355c57](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/f355c57))
+* chore(deps): update dependency oxlint to v1.28.0 ([7d4c8e9](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/7d4c8e9))
+
 ## <small>1.8.2 (2025-11-01)</small>
 
 * Merge branch 'renovate/chai-5.x' into 'main' ([a80f6b6](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/a80f6b6))
