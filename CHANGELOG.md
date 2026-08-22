@@ -1,3 +1,15 @@
+## [2.0.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v1.8.4...v2.0.0) (2026-08-22)
+
+### ⚠ BREAKING CHANGES
+
+* old send/receive/setVariable and pattern validators are removed.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+### Features
+
+* replace protocol executors with send/expect DSL ([869be34](https://github.com/springfield-ham-radio/ham-radio-driver/commit/869be3442eadb292b6947317f6bf88467db3279e))
+
 ## [1.8.4](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v1.8.3...v1.8.4) (2026-08-22)
 
 ### Bug Fixes
