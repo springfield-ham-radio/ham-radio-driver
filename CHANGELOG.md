@@ -1,3 +1,9 @@
+## [3.0.3](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.0.2...v3.0.3) (2026-08-22)
+
+### Bug Fixes
+
+* unpipe the byte-length parser after each exchange ([578b410](https://github.com/springfield-ham-radio/ham-radio-driver/commit/578b4102ae5e4699829fd7cef43852b673eea368))
+
 ## [3.0.2](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.0.1...v3.0.2) (2026-08-22)
 
 ### Bug Fixes
