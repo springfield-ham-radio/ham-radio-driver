@@ -1,3 +1,15 @@
+## [3.0.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v2.0.0...v3.0.0) (2026-08-22)
+
+### ⚠ BREAKING CHANGES
+
+* published package major is 3.0.0; consume that instead of the unpublished 2.0.0 tag.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+### Features
+
+* republish past historical npm 2.x versions ([c1e2f70](https://github.com/springfield-ham-radio/ham-radio-driver/commit/c1e2f70fa46d242789c1f50149b5a712291bcaad))
+
 ## [2.0.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v1.8.4...v2.0.0) (2026-08-22)
 
 ### ⚠ BREAKING CHANGES
