@@ -4,6 +4,7 @@ import { CancelledException } from "../cancelled-exception.js";
 import { executeExchange, extractDataFromResponse } from "../utils/step-utils.js";
 import { inclusiveSegmentSize } from "../utils/token-utils.js";
 import { isReadStep } from "../utils/step-guards.js";
+import { advanceProgress } from "../utils/progress-utils.js";
 import { StepExecutor } from "./base.js";
 
 export class ReadExecutor implements StepExecutor {
@@ -39,17 +40,6 @@ export class ReadExecutor implements StepExecutor {
       endReceived: number[];
     }> = [];
 
-    const totalChunks = segmentNames.reduce((total: number, segmentName: string) => {
-      const segmentConfig = context.memoryConfig.segments[segmentName];
-      if (segmentConfig) {
-        const segmentSize = inclusiveSegmentSize(segmentConfig.startAddress, segmentConfig.endAddress);
-        return total + Math.ceil(segmentSize / context.memoryConfig.chunkSize);
-      }
-      return total;
-    }, 0);
-
-    let processedChunks = 0;
-
     for (const segmentName of segmentNames) {
       if (context.progressIndicator?.isCanceled) {
         throw new CancelledException("Radio read was cancelled");
@@ -70,15 +60,10 @@ export class ReadExecutor implements StepExecutor {
         ack,
         context,
         expect,
-        processedChunks,
         segmentConfig,
         send,
         timeout,
-        totalChunks,
       });
-
-      const segmentSize = inclusiveSegmentSize(segmentConfig.startAddress, segmentConfig.endAddress);
-      processedChunks += Math.ceil(segmentSize / context.memoryConfig.chunkSize);
 
       const segmentChunkLogs = context.variables.get("lastReadSegmentChunks") || [];
       allChunkLogs.push(...segmentChunkLogs.map((chunk: { address: number }) => ({ ...chunk, segmentName })));
@@ -90,29 +75,13 @@ export class ReadExecutor implements StepExecutor {
     context.variables.set("lastReadSegmentChunks", allChunkLogs);
   }
 
-  private updateProgress(context: ProtocolContext, processedChunks: number, totalChunks: number, address: number, startAddress: number): void {
-    if (!context.progressIndicator || totalChunks <= 0) {
-      return;
-    }
-
-    const currentChunkInSegment = Math.floor((address - startAddress) / context.memoryConfig.chunkSize);
-    const chunkProgress = (processedChunks + currentChunkInSegment) / totalChunks;
-    const totalSteps = context.totalSteps ?? 1;
-    const stepIndex = context.stepIndex ?? 0;
-    const start = stepIndex / totalSteps;
-    const end = (stepIndex + 1) / totalSteps;
-    context.progressIndicator.setValue(Math.min(start + (end - start) * chunkProgress, 1));
-  }
-
   private async readSegmentData(params: {
     ack?: RadioExchange;
     context: ProtocolContext;
     expect: RadioExpect;
-    processedChunks: number;
     segmentConfig: RadioMemorySegment;
     send: RadioByteToken[];
     timeout?: number;
-    totalChunks: number;
   }): Promise<Uint8Array> {
     const { endAddress, startAddress } = params.segmentConfig;
     const chunkSize = params.context.memoryConfig.chunkSize;
@@ -132,8 +101,6 @@ export class ReadExecutor implements StepExecutor {
       if (params.context.progressIndicator?.isCanceled) {
         throw new CancelledException("Radio read was cancelled");
       }
-
-      this.updateProgress(params.context, params.processedChunks, params.totalChunks, address, startAddress);
 
       const remaining = endAddress - address + 1;
       const thisChunk = Math.min(chunkSize, remaining);
@@ -169,6 +136,7 @@ export class ReadExecutor implements StepExecutor {
         startSent: Array.from(startSent || []),
       });
 
+      advanceProgress(params.context);
       address += chunkData.length;
     }
 

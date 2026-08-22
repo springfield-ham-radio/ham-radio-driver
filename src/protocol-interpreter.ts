@@ -1,6 +1,8 @@
+import type { RadioProtocolStep } from '@springfield/ham-radio-api';
 import type { ProtocolContext } from './protocol-context.js';
 import { CancelledException } from './cancelled-exception.js';
 import { StepExecutorRegistry } from './executors/index.js';
+import { countProtocolProgressUnits } from './utils/progress-utils.js';
 
 /**
  * ProtocolInterpreter is responsible for executing radio communication protocols
@@ -81,7 +83,7 @@ export class ProtocolInterpreter {
    * ```
    */
   async executeProtocol(protocol: any, operation: 'readMemory' | 'writeMemory', buffer?: Uint8Array): Promise<void> {
-    const steps = protocol[operation];
+    const steps = protocol[operation] as RadioProtocolStep[];
 
     // Set the buffer and offset in context
     if (buffer) {
@@ -89,8 +91,14 @@ export class ProtocolInterpreter {
       this.context.bufferOffset = 0;
     }
 
+    this.context.totalProgressUnits = countProtocolProgressUnits(steps, this.context.memoryConfig);
+    this.context.completedProgressUnits = 0;
+    if (this.context.progressIndicator && this.context.totalProgressUnits > 0) {
+      this.context.progressIndicator.setValue(0);
+    }
+
     for (let i = 0; i < steps.length; i++) {
-      const step = steps[i];
+      const step = steps[i] as any;
 
       // Check for cancellation before executing each step
       if (this.context.progressIndicator?.isCanceled) {
@@ -119,12 +127,10 @@ export class ProtocolInterpreter {
         }
         throw error;
       }
+    }
 
-      // Update progress after each step
-      if (this.context.progressIndicator) {
-        const progress = (i + 1) / steps.length;
-        this.context.progressIndicator.setValue(progress);
-      }
+    if (this.context.progressIndicator) {
+      this.context.progressIndicator.setValue(1);
     }
   }
 

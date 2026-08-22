@@ -4,6 +4,7 @@ import { CancelledException } from "../cancelled-exception.js";
 import { executeExchange } from "../utils/step-utils.js";
 import { inclusiveSegmentSize } from "../utils/token-utils.js";
 import { isWriteStep } from "../utils/step-guards.js";
+import { advanceProgress } from "../utils/progress-utils.js";
 import { StepExecutor } from "./base.js";
 
 export class WriteExecutor implements StepExecutor {
@@ -81,6 +82,7 @@ export class WriteExecutor implements StepExecutor {
       await executeExchange({ expect: params.expect, send: params.send, timeout: params.timeout }, params.context);
 
       dataOffset += thisChunk;
+      advanceProgress(params.context);
     }
   }
 }

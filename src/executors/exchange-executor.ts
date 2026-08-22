@@ -2,6 +2,7 @@ import type { ProtocolContext } from "../protocol-context.js";
 import type { RadioProtocolStep } from "@springfield/ham-radio-api";
 import { executeExchange } from "../utils/step-utils.js";
 import { isExchangeStep } from "../utils/step-guards.js";
+import { advanceProgress } from "../utils/progress-utils.js";
 import { StepExecutor } from "./base.js";
 
 export class ExchangeExecutor implements StepExecutor {
@@ -27,5 +28,7 @@ export class ExchangeExecutor implements StepExecutor {
       },
       context,
     );
+
+    advanceProgress(context);
   }
 }

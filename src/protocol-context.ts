@@ -130,8 +130,7 @@ export interface ProtocolContext {
   progressIndicator: RadioProgressIndicator;
 
   /**
-   * Current step index within the protocol, set by the interpreter so chunked
-   * read/write can scale progress within this step's share of the overall run.
+   * Current step index within the protocol (for logging / UI command tracking).
    */
   stepIndex?: number;
 
@@ -139,4 +138,14 @@ export interface ProtocolContext {
    * Total number of protocol steps for the current operation.
    */
   totalSteps?: number;
+
+  /**
+   * Total progress units for the current protocol run (exchanges + memory chunks).
+   */
+  totalProgressUnits?: number;
+
+  /**
+   * Completed progress units for the current protocol run.
+   */
+  completedProgressUnits?: number;
 }
