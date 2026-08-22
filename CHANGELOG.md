@@ -1,3 +1,9 @@
+## [3.0.1](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.0.0...v3.0.1) (2026-08-22)
+
+### Bug Fixes
+
+* weight protocol progress by serial operations ([c0c3255](https://github.com/springfield-ham-radio/ham-radio-driver/commit/c0c3255453da77140803bfe4312fce33f7140a58))
+
 ## [3.0.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v2.0.0...v3.0.0) (2026-08-22)
 
 ### ⚠ BREAKING CHANGES
