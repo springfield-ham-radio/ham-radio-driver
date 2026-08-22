@@ -1,3 +1,9 @@
+## [1.8.4](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v1.8.3...v1.8.4) (2026-08-22)
+
+### Bug Fixes
+
+* migrate to TypeScript 7 and update dependencies ([08a05cd](https://github.com/springfield-ham-radio/ham-radio-driver/commit/08a05cddb99f44bf3c6c470df3b67d25fda06014))
+
 ## <small>1.8.3 (2025-12-17)</small>
 
 * fix: update dependencies ([ce91df7](https://gitlab.com/springfield-ham-radio/app/ham-radio-driver/commit/ce91df7))
