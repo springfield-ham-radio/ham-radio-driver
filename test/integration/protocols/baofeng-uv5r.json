@@ -1,5 +1,9 @@
 {
-  "radioModel": "baofeng-uv5r",
+  "id": {
+    "model": "baofeng-uv5r",
+    "name": "Baofeng UV-5R",
+    "manufacturer": "Baofeng"
+  },
   "version": "1.0.0",
   "description": "Baofeng UV-5R radio configuration for testing",
   "serialConfig": {
@@ -15,144 +19,55 @@
     "segments": {
       "channels": {
         "startAddress": 0,
-        "endAddress": 64,
-        "chunkSize": 64
+        "endAddress": 63
       },
       "settings": {
         "startAddress": 128,
-        "endAddress": 192,
-        "chunkSize": 64
+        "endAddress": 191
       }
     }
   },
   "readMemory": [
     {
-      "sendReceive": {
-        "send": [
-          80,
-          187,
-          255,
-          32,
-          18,
-          7,
-          37
-        ],
-        "receive": {
-          "type": "exact",
-          "value": 6,
-          "length": 1
-        },
-        "description": "Send magic number"
-      }
+      "description": "Send magic number",
+      "send": ["0x50", "0xBB", "0xFF", "0x20", "0x12", "0x07", "0x25"],
+      "expect": "0x06"
     },
     {
-      "sendReceive": {
-        "send": [
-          2
-        ],
-        "receive": {
-          "type": "variable",
-          "length": 8
-        },
-        "description": "Get radio identifier"
-      }
+      "description": "Get radio identifier",
+      "send": ["0x02"],
+      "expect": { "bytes": 8 }
     },
     {
-      "sendReceive": {
-        "send": [
-          6
-        ],
-        "receive": {
-          "type": "exact",
-          "value": 6,
-          "length": 1
-        },
-        "description": "Begin clone operation"
-      }
+      "description": "Begin clone operation",
+      "send": ["0x06"],
+      "expect": "0x06"
     },
     {
-      "readSegment": {
-        "segments": [
-          "channels",
-          "settings"
-        ],
-        "startChunk": {
-          "send": [
-            "S",
-            "address",
-            "segment.chunkSize"
-          ],
-          "receive": {
-            "type": "pattern",
-            "pattern": [
-              "X",
-              {
-                "field": "address",
-                "size": 2
-              },
-              {
-                "field": "length",
-                "size": 1
-              },
-              {
-                "field": "data",
-                "size": 0
-              }
-            ]
-          }
-        },
-        "endChunk": {
-          "send": [
-            6
-          ],
-          "receive": {
-            "type": "exact",
-            "value": 6,
-            "length": 1
-          }
-        },
-        "description": "Read all memory segments (single chunk per segment)"
+      "description": "Read all memory segments",
+      "read": {
+        "segments": ["channels", "settings"],
+        "send": ["S", "$address", "$chunkSize"],
+        "expect": ["X", "$address", "$length", "$data"],
+        "ack": {
+          "send": ["0x06"],
+          "expect": "0x06"
+        }
       }
     }
   ],
   "writeMemory": [
     {
-      "sendReceive": {
-        "send": [
-          80,
-          187,
-          255,
-          32,
-          18,
-          7,
-          37
-        ],
-        "receive": {
-          "type": "exact",
-          "value": 6,
-          "length": 1
-        },
-        "description": "Send magic number"
-      }
+      "description": "Send magic number",
+      "send": ["0x50", "0xBB", "0xFF", "0x20", "0x12", "0x07", "0x25"],
+      "expect": "0x06"
     },
     {
-      "writeSegment": {
-        "segments": [
-          "channels",
-          "settings"
-        ],
-        "send": [
-          "X",
-          "segment.startAddress",
-          "segment.chunkSize"
-        ],
-        "data": "segment.data",
-        "receive": {
-          "type": "exact",
-          "value": 6,
-          "length": 1
-        },
-        "description": "Write all memory segments (single chunk per segment)"
+      "description": "Write all memory segments",
+      "write": {
+        "segments": ["channels", "settings"],
+        "send": ["X", "$address", "$chunkSize", "$data"],
+        "expect": "0x06"
       }
     }
   ]

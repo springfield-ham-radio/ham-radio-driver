@@ -84,10 +84,9 @@ See `baofeng-uv5r-config.json` for a complete example configuration for the Baof
 
 ## Protocol DSL
 
-The `readMemory` and `writeMemory` arrays contain protocol steps that define how to communicate with the radio. Each step can be one of:
+The `readMemory` and `writeMemory` arrays contain protocol steps that define how to communicate with the radio. Each step is either:
 
-- `sendReceive`: Send data and receive a response
-- `readSegment`: Read memory segments in chunks
-- `writeSegment`: Write memory segments in chunks
+- An **exchange** with `send` and/or `expect`
+- A chunked **read** or **write** that repeats an exchange across memory segments
 
-See the main project documentation for detailed information about the protocol DSL syntax.
+See the protocol DSL documentation for syntax.

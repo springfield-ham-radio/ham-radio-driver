@@ -1,122 +1,34 @@
+import type { RadioByteToken, RadioExpect } from "@springfield/ham-radio-api";
 import type { ProtocolContext } from "../protocol-context.js";
 import { CancelledException } from "../cancelled-exception.js";
 import { ByteLengthParser } from "@serialport/parser-byte-length";
-import { ReceivePatternValidatorFactory } from "./validator-factory.js";
-import { resolveExpressions } from "./expression-utils.js";
+import { extractExpectData, getExpectedLength, matchExpect } from "./expect-matcher.js";
+import { resolveSendTokens } from "./token-utils.js";
 
-/**
- * Protocol Operations: Template Method Pattern Implementation
- *
- * This module implements the Template Method pattern for radio protocol operations,
- * providing a structured approach to send-receive communication with radio devices.
- * It defines the common flow for protocol operations while allowing specialized
- * behavior through abstract methods.
- *
- * Purpose:
- * - Provides a consistent framework for protocol operations
- * - Handles common concerns like timeout, error handling, and cancellation
- * - Supports dynamic expression resolution for protocol data
- * - Implements reliable send-receive communication patterns
- * - Centralizes parser setup and data handling logic
- *
- * Design Rationale:
- * - Template Method pattern ensures consistent operation flow
- * - Abstract methods allow specialized behavior for different operation types
- * - Timeout handling prevents indefinite waiting for responses
- * - Cancellation support enables user-initiated operation termination
- * - Error handling provides clear feedback for communication failures
- *
- * Usage:
- * Protocol operations are used by executors to implement complex communication
- * patterns with radio devices, such as sending commands and receiving responses
- * with validation and data extraction.
- */
+export interface ExchangeConfig {
+  send?: RadioByteToken[];
+  expect?: RadioExpect;
+  timeout?: number;
+  description?: string;
+}
 
-/**
- * Abstract base class for protocol operations using the Template Method pattern.
- *
- * This class defines the common structure for protocol operations while
- * allowing subclasses to implement specialized behavior for different
- * operation types.
- */
 export abstract class ProtocolOperationTemplate {
-  /**
-   * Validates the operation configuration before execution.
-   *
-   * @param config - The operation configuration to validate
-   * @throws Error if the configuration is invalid
-   */
-  protected abstract validateConfiguration(config: any): void;
+  protected abstract validateConfiguration(config: ExchangeConfig): void;
+  protected abstract setupParser(config: ExchangeConfig, context: ProtocolContext): ByteLengthParser;
+  protected abstract handleData(data: Buffer, config: ExchangeConfig, context: ProtocolContext): Uint8Array;
+  protected abstract handleError(error: Error, config: ExchangeConfig): void;
+  protected abstract sendData(config: ExchangeConfig, context: ProtocolContext): void;
 
-  /**
-   * Sets up the parser for receiving data from the radio device.
-   *
-   * @param config - The operation configuration
-   * @param context - The protocol context
-   * @returns The configured parser instance
-   */
-  protected abstract setupParser(config: any, context: ProtocolContext): any;
-
-  /**
-   * Handles received data and extracts the relevant information.
-   *
-   * @param data - The raw data received from the radio device
-   * @param config - The operation configuration
-   * @param context - The protocol context
-   * @returns The extracted data as a Uint8Array
-   */
-  protected abstract handleData(data: Buffer, config: any, context: ProtocolContext): Uint8Array;
-
-  /**
-   * Handles errors that occur during the operation.
-   *
-   * @param error - The error that occurred
-   * @param config - The operation configuration
-   */
-  protected abstract handleError(error: Error, config: any): void;
-
-  /**
-   * Sends data to the radio device.
-   *
-   * @param config - The operation configuration
-   * @param context - The protocol context
-   */
-  protected abstract sendData(config: any, context: ProtocolContext): void;
-
-  /**
-   * Executes the protocol operation using the template method pattern.
-   *
-   * This method implements the common flow for protocol operations:
-   * 1. Validate configuration
-   * 2. Check for cancellation
-   * 3. Set up parser and timeout
-   * 4. Send data to device
-   * 5. Wait for and handle response
-   * 6. Clean up resources
-   *
-   * @param config - The operation configuration
-   * @param context - The protocol context
-   * @returns Promise that resolves to the extracted data
-   * @throws CancelledException if the operation is cancelled
-   * @throws Error if the operation fails or times out
-   *
-   * Example:
-   * ```typescript
-   * const operation = new SendReceiveOperation();
-   * const result = await operation.execute({
-   *   send: [0x01, 0x02, 0x03],
-   *   receive: { type: 'exact', value: 0x06 },
-   *   timeout: 5000,
-   *   description: 'Send command and receive acknowledgment'
-   * }, context);
-   * ```
-   */
-  async execute(config: any, context: ProtocolContext): Promise<Uint8Array> {
+  async execute(config: ExchangeConfig, context: ProtocolContext): Promise<Uint8Array> {
     this.validateConfiguration(config);
 
-    // Check for cancellation before starting the operation
     if (context.progressIndicator?.isCanceled) {
-      throw new CancelledException('Protocol operation was cancelled');
+      throw new CancelledException("Protocol operation was cancelled");
+    }
+
+    if (config.expect === undefined) {
+      this.sendData(config, context);
+      return new Uint8Array(0);
     }
 
     return new Promise((resolve, reject) => {
@@ -132,8 +44,7 @@ export abstract class ProtocolOperationTemplate {
         parser.removeAllListeners();
 
         try {
-          const result = this.handleData(data, config, context);
-          resolve(result);
+          resolve(this.handleData(data, config, context));
         } catch (error) {
           reject(error);
         }
@@ -151,88 +62,52 @@ export abstract class ProtocolOperationTemplate {
   }
 }
 
-/**
- * Implementation of send-receive protocol operations.
- *
- * This class handles the common pattern of sending data to a radio device
- * and receiving a response with validation. It uses the template method
- * pattern to provide a consistent framework for this type of operation.
- */
 export class SendReceiveOperation extends ProtocolOperationTemplate {
-  /**
-   * Validates that the configuration contains both send and receive specifications.
-   *
-   * @param config - The operation configuration
-   * @throws Error if send or receive configuration is missing
-   */
-  protected validateConfiguration(config: any): void {
-    if (!config.send || !config.receive) {
-      throw new Error("SendReceive operation requires both send and receive configuration");
+  protected validateConfiguration(config: ExchangeConfig): void {
+    if (config.send === undefined && config.expect === undefined) {
+      throw new Error("Exchange requires send and/or expect");
     }
   }
 
-  /**
-   * Sets up a byte-length parser based on the expected receive pattern.
-   *
-   * @param config - The operation configuration
-   * @param context - The protocol context
-   * @returns A ByteLengthParser configured for the expected data length
-   */
-  protected setupParser(config: any, context: ProtocolContext): any {
-    const expectedLength = ReceivePatternValidatorFactory.getValidator(config.receive).getExpectedLength(config.receive, context);
+  protected setupParser(config: ExchangeConfig, context: ProtocolContext): ByteLengthParser {
+    if (config.expect === undefined) {
+      throw new Error("Parser setup requires expect");
+    }
+    const expectedLength = getExpectedLength(config.expect, context);
     return context.port.pipe(new ByteLengthParser({ length: expectedLength }));
   }
 
-  /**
-   * Validates received data against the expected pattern and extracts relevant data.
-   *
-   * @param data - The raw data received from the radio device
-   * @param config - The operation configuration
-   * @param context - The protocol context
-   * @returns The extracted data from the response
-   * @throws Error if the received data doesn't match the expected pattern
-   */
-  protected handleData(data: Buffer, config: any, context: ProtocolContext): Uint8Array {
-    context.logger.debug(`Received data: ${data.toString('hex')}`);
+  protected handleData(data: Buffer, config: ExchangeConfig, context: ProtocolContext): Uint8Array {
+    context.logger.debug(`Received data: ${data.toString("hex")}`);
 
-    // Store the received data in context variables for UI logging
     const receivedData = new Uint8Array(data);
-    context.variables.set('lastReceivedData', receivedData);
-    context.variables.set('lastReceivedDataBuffer', data);
+    context.variables.set("lastReceivedData", receivedData);
+    context.variables.set("lastReceivedDataBuffer", data);
 
-    const validator = ReceivePatternValidatorFactory.getValidator(config.receive);
+    if (config.expect === undefined) {
+      return receivedData;
+    }
 
-    if (validator.validate(data, config.receive)) {
-      return validator.extractData(new Uint8Array(data), config.receive);
-    } else {
+    if (!matchExpect(data, config.expect, context)) {
       throw new Error(`Invalid response pattern: ${Buffer.from(data).toString("hex")}`);
     }
+
+    return extractExpectData(receivedData, config.expect, context);
   }
 
-  /**
-   * Handles errors during the operation (delegated to template method).
-   *
-   * @param _error - The error that occurred (handled by template method)
-   * @param _config - The operation configuration (unused)
-   */
-  protected handleError(_error: Error, _config: any): void {
+  protected handleError(_error: Error, _config: ExchangeConfig): void {
     // Error handling is done in the template method
   }
 
-  /**
-   * Sends data to the radio device after resolving any expressions.
-   *
-   * @param config - The operation configuration
-   * @param context - The protocol context
-   */
-  protected sendData(config: any, context: ProtocolContext): void {
-    const sendData = resolveExpressions(config.send, context);
-    const sendDataArray = new Uint8Array(sendData.map(val => typeof val === 'number' ? val : val.charCodeAt(0)));
+  protected sendData(config: ExchangeConfig, context: ProtocolContext): void {
+    if (config.send === undefined) {
+      return;
+    }
 
-    // Store the sent data in context variables for UI logging
-    context.variables.set('lastSentData', sendDataArray);
-
-    context.logger.debug(`Sending data: ${Buffer.from(sendDataArray).toString('hex')}`);
+    const bytes = resolveSendTokens(config.send, context);
+    const sendDataArray = new Uint8Array(bytes);
+    context.variables.set("lastSentData", sendDataArray);
+    context.logger.debug(`Sending data: ${Buffer.from(sendDataArray).toString("hex")}`);
     context.port.write(sendDataArray);
   }
 }

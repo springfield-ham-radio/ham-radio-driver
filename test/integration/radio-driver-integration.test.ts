@@ -82,12 +82,11 @@ class MockSerialPort extends EventEmitter {
         // Calculate how many bytes are actually available from this address
         // For the test, we'll use the test's segment boundaries (0-64 and 128-192)
         let segmentEndAddress: number;
-        if (address >= 0 && address <= 64) {
-          segmentEndAddress = 64; // Test channel memory segment
-        } else if (address >= 128 && address <= 192) {
-          segmentEndAddress = 192; // Test settings memory segment
+        if (address >= 0 && address <= 63) {
+          segmentEndAddress = 63;
+        } else if (address >= 128 && address <= 191) {
+          segmentEndAddress = 191;
         } else {
-          // Address is outside known segments, return 0 bytes
           segmentEndAddress = address - 1;
         }
         const actualDataLength = Math.max(0, Math.min(requestedChunkSize, segmentEndAddress - address + 1));
@@ -107,7 +106,6 @@ class MockSerialPort extends EventEmitter {
       // End chunk response: 0x06
       return Buffer.from([0x06]);
     } else if (this.isWriteSegment(sentData)) {
-      // Write segment operations always expect acknowledgment
       return Buffer.from([0x06]);
     }
 
@@ -182,9 +180,8 @@ class MockSerialPort extends EventEmitter {
   }
 
   private isWriteSegment(data: Buffer): boolean {
-    // Protocol sends: 'X' (1 byte) + address (2 bytes) + chunkSize (1 byte) = 4 bytes
-    // This is a write chunk request
-    if (data.length === 4 && data[0] === 0x58 && data[3] === 64) { // 0x58 = 'X'
+    // Write chunk: 'X' + address (2 bytes) + chunkSize + payload
+    if (data.length >= 4 && data[0] === 0x58) {
       this.currentOperation = 'write';
       return true;
     }
@@ -247,106 +244,55 @@ const baofengUV5RRadio: Radio = {
     segments: {
       channels: {
         startAddress: 0,
-        endAddress: 64,
+        endAddress: 63,
       },
       settings: {
         startAddress: 128,
-        endAddress: 192,
+        endAddress: 191,
       },
     },
   },
   readMemory: [
     {
-      sendReceive: {
-        send: [80, 187, 255, 32, 18, 7, 37],
-        receive: {
-          type: 'exact',
-          value: 6,
-          length: 1,
-        },
-        description: 'Send magic number',
-      },
+      description: 'Send magic number',
+      send: ['0x50', '0xBB', '0xFF', '0x20', '0x12', '0x07', '0x25'],
+      expect: '0x06',
     },
     {
-      sendReceive: {
-        send: [2],
-        receive: {
-          type: 'variable',
-          length: 8,
-        },
-        description: 'Get radio identifier',
-      },
+      description: 'Get radio identifier',
+      send: ['0x02'],
+      expect: { bytes: 8 },
     },
     {
-      sendReceive: {
-        send: [6],
-        receive: {
-          type: 'exact',
-          value: 6,
-          length: 1,
-        },
-        description: 'Begin clone operation',
-      },
+      description: 'Begin clone operation',
+      send: ['0x06'],
+      expect: '0x06',
     },
     {
-      readSegment: {
+      description: 'Read all memory segments',
+      read: {
         segments: ['channels', 'settings'],
-        startChunk: {
-          send: ['S', 'address', 'segment.chunkSize'],
-          receive: {
-            type: 'pattern',
-            pattern: [
-              'X',
-              {
-                field: 'address',
-                size: 2,
-              },
-              {
-                field: 'length',
-                size: 1,
-              },
-              {
-                field: 'data',
-                size: 0,
-              },
-            ],
-          },
+        send: ['S', '$address', '$chunkSize'],
+        expect: ['X', '$address', '$length', '$data'],
+        ack: {
+          send: ['0x06'],
+          expect: '0x06',
         },
-        endChunk: {
-          send: [6],
-          receive: {
-            type: 'exact',
-            value: 6,
-            length: 1,
-          },
-        },
-        description: 'Read all memory segments',
       },
     },
   ],
   writeMemory: [
     {
-      sendReceive: {
-        send: [80, 187, 255, 32, 18, 7, 37],
-        receive: {
-          type: 'exact',
-          value: 6,
-          length: 1,
-        },
-        description: 'Send magic number',
-      },
+      description: 'Send magic number',
+      send: ['0x50', '0xBB', '0xFF', '0x20', '0x12', '0x07', '0x25'],
+      expect: '0x06',
     },
     {
-      writeSegment: {
+      description: 'Write all memory segments',
+      write: {
         segments: ['channels', 'settings'],
-        send: ['X', 'segment.startAddress', 'segment.chunkSize'],
-        data: 'segment.data',
-        receive: {
-          type: 'exact',
-          value: 6,
-          length: 1,
-        },
-        description: 'Write all memory segments',
+        send: ['X', '$address', '$chunkSize', '$data'],
+        expect: '0x06',
       },
     },
   ],

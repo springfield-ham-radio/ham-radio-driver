@@ -102,6 +102,9 @@ export class ProtocolInterpreter {
         this.context.uiLogger.startCommand(i, steps.length, operation, step);
       }
 
+      this.context.stepIndex = i;
+      this.context.totalSteps = steps.length;
+
       try {
         await this.executorRegistry.executeStep(step, this.context);
 

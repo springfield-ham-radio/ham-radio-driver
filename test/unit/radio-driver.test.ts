@@ -26,6 +26,8 @@ describe('RadioDriver', () => {
     },
     memoryConfig: {
       chunkSize: 16,
+      addressSize: 2,
+      addressEndianness: 'big',
       segments: {
         channels: {
           startAddress: 0,
@@ -35,20 +37,16 @@ describe('RadioDriver', () => {
     },
     readMemory: [
       {
-        sendReceive: {
-          send: [0x01],
-          receive: { type: 'exact', value: 0x06, length: 1 },
-          description: 'Test step',
-        },
+        description: 'Test step',
+        send: [0x01],
+        expect: 0x06,
       },
     ],
     writeMemory: [
       {
-        sendReceive: {
-          send: [0x02],
-          receive: { type: 'exact', value: 0x06, length: 1 },
-          description: 'Test write step',
-        },
+        description: 'Test write step',
+        send: [0x02],
+        expect: 0x06,
       },
     ],
   };

@@ -128,4 +128,15 @@ export interface ProtocolContext {
    * to respect cancellation requests and update progress status.
    */
   progressIndicator: RadioProgressIndicator;
+
+  /**
+   * Current step index within the protocol, set by the interpreter so chunked
+   * read/write can scale progress within this step's share of the overall run.
+   */
+  stepIndex?: number;
+
+  /**
+   * Total number of protocol steps for the current operation.
+   */
+  totalSteps?: number;
 }
