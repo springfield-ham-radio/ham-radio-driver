@@ -12,6 +12,14 @@ export interface ExchangeConfig {
   description?: string;
 }
 
+const releaseParser = (context: ProtocolContext, parser: ByteLengthParser): void => {
+  if (typeof context.port.unpipe === "function") {
+    context.port.unpipe(parser);
+  }
+
+  parser.removeAllListeners();
+};
+
 export abstract class ProtocolOperationTemplate {
   protected abstract validateConfiguration(config: ExchangeConfig): void;
   protected abstract setupParser(config: ExchangeConfig, context: ProtocolContext): ByteLengthParser;
@@ -35,13 +43,13 @@ export abstract class ProtocolOperationTemplate {
       const parser = this.setupParser(config, context);
 
       const timeoutId = setTimeout(() => {
-        parser.removeAllListeners();
+        releaseParser(context, parser);
         reject(new Error(`Timeout waiting for response: ${config.description || "operation"}`));
       }, config.timeout || 5000);
 
       parser.on("data", (data: Buffer) => {
         clearTimeout(timeoutId);
-        parser.removeAllListeners();
+        releaseParser(context, parser);
 
         try {
           resolve(this.handleData(data, config, context));
@@ -52,7 +60,7 @@ export abstract class ProtocolOperationTemplate {
 
       parser.on("error", (error: Error) => {
         clearTimeout(timeoutId);
-        parser.removeAllListeners();
+        releaseParser(context, parser);
         this.handleError(error, config);
         reject(error);
       });

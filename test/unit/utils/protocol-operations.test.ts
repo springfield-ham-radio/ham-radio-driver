@@ -170,5 +170,48 @@ describe('protocol-operations', () => {
         expect(writtenData).to.deep.equal(new Uint8Array([1, 16, 0, 65]));
       });
     });
+
+    describe('parser lifecycle', () => {
+      it('should unpipe the parser after a successful exchange', async () => {
+        const piped: object[] = [];
+        const unpiped: object[] = [];
+
+        (mockContext.port as any).pipe = (destination: EventEmitter) => {
+          piped.push(destination);
+          setTimeout(() => {
+            destination.emit('data', Buffer.from([0x06]));
+          }, 5);
+          return destination;
+        };
+        (mockContext.port as any).unpipe = (destination: object) => {
+          unpiped.push(destination);
+        };
+        (mockContext.port as any).write = () => true;
+
+        await operation.execute({ send: [0x06], expect: '0x06', timeout: 1000 }, mockContext);
+
+        expect(piped).to.have.length(1);
+        expect(unpiped).to.deep.equal(piped);
+      });
+
+      it('should unpipe the parser after a receive timeout', async () => {
+        const unpiped: object[] = [];
+
+        (mockContext.port as any).pipe = (destination: EventEmitter) => destination;
+        (mockContext.port as any).unpipe = (destination: object) => {
+          unpiped.push(destination);
+        };
+        (mockContext.port as any).write = () => true;
+
+        try {
+          await operation.execute({ send: [0x06], expect: '0x06', timeout: 20 }, mockContext);
+          expect.fail('Should have timed out');
+        } catch (error) {
+          expect((error as Error).message).to.include('Timeout waiting for response');
+        }
+
+        expect(unpiped).to.have.length(1);
+      });
+    });
   });
 });
