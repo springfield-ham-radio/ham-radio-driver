@@ -2,9 +2,9 @@ import type { ProtocolContext } from "../protocol-context.js";
 import type { RadioByteToken, RadioExpect, RadioMemorySegment, RadioProtocolStep } from "@springfield/ham-radio-api";
 import { CancelledException } from "../cancelled-exception.js";
 import { executeExchange } from "../utils/step-utils.js";
-import { inclusiveSegmentSize } from "../utils/token-utils.js";
 import { isWriteStep } from "../utils/step-guards.js";
 import { advanceProgress } from "../utils/progress-utils.js";
+import { bufferOffsetForRadioAddress, isChunkSkipped, wait, writeLoopOptions } from "../utils/write-chunks.js";
 import { StepExecutor } from "./base.js";
 
 export class WriteExecutor implements StepExecutor {
@@ -18,6 +18,7 @@ export class WriteExecutor implements StepExecutor {
     }
 
     const { expect, segments: segmentNames, send, timeout } = step.write;
+    const { chunkSize, delay, skip } = writeLoopOptions(step.write);
 
     if (step.description) {
       context.logger.debug(step.description);
@@ -26,8 +27,6 @@ export class WriteExecutor implements StepExecutor {
     if (!context.memoryBuffer) {
       throw new Error("No write data buffer provided in context");
     }
-
-    let bufferOffset = context.bufferOffset ?? 0;
 
     for (const segmentName of segmentNames) {
       if (context.progressIndicator?.isCanceled) {
@@ -45,43 +44,61 @@ export class WriteExecutor implements StepExecutor {
         name: segmentName,
       };
 
-      const segmentLength = inclusiveSegmentSize(segmentConfig.startAddress, segmentConfig.endAddress);
-      const segmentData = context.memoryBuffer.slice(bufferOffset, bufferOffset + segmentLength);
-      await this.writeSegmentData({ context, expect, segmentConfig, send, timeout, writeData: segmentData });
-      bufferOffset += segmentLength;
+      await this.writeSegmentData({
+        chunkSize: chunkSize ?? context.memoryConfig.chunkSize,
+        context,
+        delay: delay ?? 0,
+        expect,
+        segmentConfig,
+        send,
+        skip,
+        timeout,
+      });
     }
-
-    context.bufferOffset = bufferOffset;
   }
 
   private async writeSegmentData(params: {
+    chunkSize: number;
     context: ProtocolContext;
+    delay: number;
     expect: RadioExpect;
     segmentConfig: RadioMemorySegment;
     send: RadioByteToken[];
+    skip?: RadioMemorySegment[];
     timeout?: number;
-    writeData: Uint8Array;
   }): Promise<void> {
     const { endAddress, startAddress } = params.segmentConfig;
-    const chunkSize = params.context.memoryConfig.chunkSize;
-    let dataOffset = 0;
+    const buffer = params.context.memoryBuffer;
 
-    for (let address = startAddress; address <= endAddress; address += chunkSize) {
+    for (let address = startAddress; address <= endAddress; address += params.chunkSize) {
       if (params.context.progressIndicator?.isCanceled) {
         throw new CancelledException("Radio write was cancelled");
       }
 
       const remaining = endAddress - address + 1;
-      const thisChunk = Math.min(chunkSize, remaining);
-      params.context.currentSegment!.currentAddress = address;
+      const thisChunk = Math.min(params.chunkSize, remaining);
+      const chunkEnd = address + thisChunk - 1;
 
-      const chunkData = params.writeData.slice(dataOffset, dataOffset + thisChunk);
-      params.context.variables.set("segment.data", chunkData);
+      if (isChunkSkipped(address, chunkEnd, params.skip)) {
+        continue;
+      }
+
+      params.context.currentSegment!.currentAddress = address;
       params.context.variables.set("chunkLength", thisChunk);
 
-      await executeExchange({ expect: params.expect, send: params.send, timeout: params.timeout }, params.context);
+      const offset = bufferOffsetForRadioAddress(address, params.context.memoryConfig, buffer.length);
+      const chunkData = buffer.slice(offset, offset + thisChunk);
 
-      dataOffset += thisChunk;
+      if (chunkData.length !== thisChunk) {
+        throw new RangeError(
+          `WriteExecutor: buffer too short for address 0x${address.toString(16)}. need=${thisChunk}, have=${chunkData.length}, offset=${offset}, buffer=${buffer.length}`,
+        );
+      }
+
+      params.context.variables.set("segment.data", chunkData);
+
+      await executeExchange({ expect: params.expect, send: params.send, timeout: params.timeout }, params.context);
+      await wait(params.delay);
       advanceProgress(params.context);
     }
   }

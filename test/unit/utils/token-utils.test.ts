@@ -49,6 +49,7 @@ describe("token-utils", () => {
     it("uses $length from chunkLength when set", () => {
       context.variables.set("chunkLength", 8);
       expect(resolveSendTokens(["$length"], context)).to.deep.equal([8]);
+      expect(resolveSendTokens(["$chunkSize"], context)).to.deep.equal([8]);
     });
   });
 });

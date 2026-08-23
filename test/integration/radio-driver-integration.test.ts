@@ -288,10 +288,21 @@ const baofengUV5RRadio: Radio = {
       expect: '0x06',
     },
     {
+      description: 'Get radio identifier',
+      send: ['0x02'],
+      expect: { bytes: 8 },
+    },
+    {
+      description: 'Begin clone operation',
+      send: ['0x06'],
+      expect: '0x06',
+    },
+    {
       description: 'Write all memory segments',
       write: {
         segments: ['channels', 'settings'],
-        send: ['X', '$address', '$chunkSize', '$data'],
+        chunkSize: 16,
+        send: ['X', '$address', '$length', '$data'],
         expect: '0x06',
       },
     },
@@ -342,6 +353,19 @@ describe('RadioDriver Integration Tests', () => {
       } catch (error: any) {
         expect(error.constructor.name).to.equal('CancelledException');
       }
+    });
+  });
+
+  describe('writeRadio()', () => {
+    it('should successfully write radio memory using baofeng-uv5r protocol', async () => {
+      const driver = new TestableRadioDriver(baofengUV5RRadio, mockLogger, MockSerialPort);
+      const packedSize = 64 + 64;
+      const memoryData = new Uint8Array(packedSize);
+      for (let index = 0; index < memoryData.length; index += 1) {
+        memoryData[index] = index & 0xff;
+      }
+
+      await driver.writeRadio('/dev/ttyUSB0', memoryData, progressIndicator);
     });
   });
 

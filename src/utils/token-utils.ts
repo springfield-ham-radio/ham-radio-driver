@@ -56,7 +56,7 @@ const resolvePlaceholder = (token: string, context: ProtocolContext): number[] =
     case "$address":
       return numberToBytes(getCurrentAddress(context), context.memoryConfig.addressSize, context.memoryConfig.addressEndianness);
     case "$chunkSize":
-      return [context.memoryConfig.chunkSize & 0xff];
+      return [getChunkLength(context) & 0xff];
     case "$length":
       return [getChunkLength(context) & 0xff];
     default:

@@ -40,6 +40,23 @@ describe("progress-utils", () => {
     expect(countProtocolProgressUnits(steps, memoryConfig)).to.equal(6);
   });
 
+  it("uses write chunkSize and skip when counting progress", () => {
+    const steps: RadioProtocolStep[] = [
+      { expect: "0x06", send: ["0x50"] },
+      {
+        write: {
+          chunkSize: 16,
+          expect: "0x06",
+          segments: ["channels"],
+          send: ["X", "$address", "$length", "$data"],
+          skip: [{ endAddress: 15, startAddress: 0 }],
+        },
+      },
+    ];
+
+    expect(countProtocolProgressUnits(steps, memoryConfig)).to.equal(8);
+  });
+
   it("advances progress against totalProgressUnits", () => {
     const values: number[] = [];
     const context = ProtocolContextFactory.build({

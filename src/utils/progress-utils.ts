@@ -1,21 +1,14 @@
 import type { RadioMemoryConfig, RadioProtocolStep } from "@springfield/ham-radio-api";
 import type { ProtocolContext } from "../protocol-context.js";
-import { inclusiveSegmentSize } from "./token-utils.js";
 import { isExchangeStep, isReadStep, isWriteStep } from "./step-guards.js";
+import { countWritableChunks, writeLoopOptions } from "./write-chunks.js";
 
 /**
  * Count chunk round-trips for the named memory segments.
  * Each chunk is one unit of wall-clock work (send/receive, optional ack).
  */
 export function countSegmentChunkUnits(segmentNames: string[], memoryConfig: RadioMemoryConfig): number {
-  return segmentNames.reduce((total, segmentName) => {
-    const segment = memoryConfig.segments[segmentName];
-    if (!segment) {
-      return total;
-    }
-    const size = inclusiveSegmentSize(segment.startAddress, segment.endAddress);
-    return total + Math.ceil(size / memoryConfig.chunkSize);
-  }, 0);
+  return countWritableChunks(segmentNames, memoryConfig);
 }
 
 /**
@@ -25,10 +18,10 @@ export function countSegmentChunkUnits(segmentNames: string[], memoryConfig: Rad
 export function countProtocolProgressUnits(steps: RadioProtocolStep[], memoryConfig: RadioMemoryConfig): number {
   return steps.reduce((total, step) => {
     if (isReadStep(step)) {
-      return total + countSegmentChunkUnits(step.read.segments, memoryConfig);
+      return total + countWritableChunks(step.read.segments, memoryConfig);
     }
     if (isWriteStep(step)) {
-      return total + countSegmentChunkUnits(step.write.segments, memoryConfig);
+      return total + countWritableChunks(step.write.segments, memoryConfig, writeLoopOptions(step.write));
     }
     if (isExchangeStep(step)) {
       return total + 1;

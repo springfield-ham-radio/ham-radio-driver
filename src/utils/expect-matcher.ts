@@ -63,7 +63,7 @@ export const matchExpect = (data: Buffer, expect: RadioExpect, context: Protocol
     }
 
     if (token === "$chunkSize") {
-      if (data[offset] !== (context.memoryConfig.chunkSize & 0xff)) {
+      if (data[offset] !== (getChunkLength(context) & 0xff)) {
         return false;
       }
       offset += 1;
