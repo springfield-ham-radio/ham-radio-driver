@@ -1,3 +1,9 @@
+## [3.1.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.0.3...v3.1.0) (2026-08-23)
+
+### Features
+
+* upload memory in configurable write chunks with skip ranges ([0d76dd3](https://github.com/springfield-ham-radio/ham-radio-driver/commit/0d76dd35ee9a0f9780b6e7460fc318a7de5d8599))
+
 ## [3.0.3](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.0.2...v3.0.3) (2026-08-22)
 
 ### Bug Fixes
