@@ -1,4 +1,0 @@
-{
-  "name": "Ham Radio Driver",
-  "install": "export NVM_DIR=\"$HOME/.nvm\" && . \"$NVM_DIR/nvm.sh\" && nvm install 24.12.0 && nvm alias default 24.12.0 && nvm use 24.12.0 && corepack enable && cd /agent/repos/ham-radio-driver && corepack yarn install --immutable"
-}
