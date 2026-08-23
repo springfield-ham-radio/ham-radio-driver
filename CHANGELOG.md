@@ -1,3 +1,9 @@
+## [3.1.2](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.1.1...v3.1.2) (2026-08-23)
+
+### Bug Fixes
+
+* cd into driver repo before install for correct Yarn resolution ([13fd1b2](https://github.com/springfield-ham-radio/ham-radio-driver/commit/13fd1b22bc824f3ebf56479831fd06fdb59aa21f))
+
 ## [3.1.1](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.1.0...v3.1.1) (2026-08-23)
 
 ### Bug Fixes
