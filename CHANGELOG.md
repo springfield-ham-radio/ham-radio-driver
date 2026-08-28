@@ -1,3 +1,9 @@
+## [3.2.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.1.2...v3.2.0) (2026-08-28)
+
+### Features
+
+* support Kenwood clone $block, baud switching, and RTS/CTS ([73e3e61](https://github.com/springfield-ham-radio/ham-radio-driver/commit/73e3e6118e49001e87472ef58f610ee0d2ef1bb9))
+
 ## [3.1.2](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.1.1...v3.1.2) (2026-08-23)
 
 ### Bug Fixes
