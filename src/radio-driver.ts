@@ -205,13 +205,14 @@ export class RadioDriver {
    * ```
    */
   private async connectToRadio(serialPortPath: string): Promise<SerialPort> {
-    const { baudRate, dataBits = 8, stopBits = 1, parity = 'none' } = this.radio.serialConfig;
+    const { baudRate, dataBits = 8, stopBits = 1, parity = 'none', rtscts = false } = this.radio.serialConfig;
 
     const port = this.createSerialPort({
       baudRate,
       dataBits,
       parity,
       path: serialPortPath,
+      rtscts,
       stopBits,
     });
 

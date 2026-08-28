@@ -13,7 +13,7 @@ export const getExpectedLength = (expect: RadioExpect, context: ProtocolContext)
   for (const token of expectTokens(expect)) {
     if (token === "$data") {
       length += getChunkLength(context);
-    } else if (token === "$address") {
+    } else if (token === "$address" || token === "$block") {
       length += context.memoryConfig.addressSize;
     } else if (token === "$length" || token === "$chunkSize") {
       length += 1;
@@ -44,8 +44,9 @@ export const matchExpect = (data: Buffer, expect: RadioExpect, context: Protocol
       return offset + dataLength <= data.length;
     }
 
-    if (token === "$address") {
-      const addressBytes = numberToBytes(getCurrentAddress(context), context.memoryConfig.addressSize, context.memoryConfig.addressEndianness);
+    if (token === "$address" || token === "$block") {
+      const value = token === "$block" ? Math.floor(getCurrentAddress(context) / context.memoryConfig.chunkSize) : getCurrentAddress(context);
+      const addressBytes = numberToBytes(value, context.memoryConfig.addressSize, context.memoryConfig.addressEndianness);
       if (!bytesEqual(data, offset, addressBytes)) {
         return false;
       }
@@ -99,7 +100,7 @@ export const extractExpectData = (data: Uint8Array, expect: RadioExpect, context
 
   for (let i = 0; i < dataIndex; i++) {
     const token = tokens[i];
-    if (token === "$address") {
+    if (token === "$address" || token === "$block") {
       offset += context.memoryConfig.addressSize;
     } else if (token === "$length") {
       dataLength = data[offset] ?? dataLength;

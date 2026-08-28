@@ -138,7 +138,7 @@ describe('protocol-operations', () => {
       });
 
       it('should throw when both send and expect are missing', () => {
-        expect(() => operation['validateConfiguration']({})).to.throw('Exchange requires send and/or expect');
+        expect(() => operation['validateConfiguration']({})).to.throw('Exchange requires send, expect, and/or setBaudRate');
       });
     });
 

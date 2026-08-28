@@ -51,10 +51,17 @@ export const getChunkLength = (context: ProtocolContext): number => {
 
 export const getCurrentAddress = (context: ProtocolContext): number => context.currentSegment?.currentAddress ?? 0;
 
+export const getBlockNumber = (context: ProtocolContext): number => {
+  const chunkSize = context.memoryConfig.chunkSize;
+  return Math.floor(getCurrentAddress(context) / chunkSize);
+};
+
 const resolvePlaceholder = (token: string, context: ProtocolContext): number[] => {
   switch (token) {
     case "$address":
       return numberToBytes(getCurrentAddress(context), context.memoryConfig.addressSize, context.memoryConfig.addressEndianness);
+    case "$block":
+      return numberToBytes(getBlockNumber(context), context.memoryConfig.addressSize, context.memoryConfig.addressEndianness);
     case "$chunkSize":
       return [getChunkLength(context) & 0xff];
     case "$length":

@@ -24,6 +24,7 @@ export class ExchangeExecutor implements StepExecutor {
         description: step.description,
         expect: step.expect,
         send: step.send,
+        setBaudRate: step.setBaudRate,
         timeout: step.timeout,
       },
       context,

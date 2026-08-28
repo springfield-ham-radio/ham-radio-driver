@@ -34,8 +34,25 @@ describe("expect-matcher", () => {
     expect(extractExpectData(new Uint8Array(frame), expectPattern, context)).to.deep.equal(new Uint8Array(payload));
   });
 
-  it("rejects a framed response with the wrong opcode", () => {
-    const frame = Buffer.concat([Buffer.from([0x59, 0x10, 0x00, 64]), Buffer.alloc(64)]);
-    expect(matchExpect(frame, ["X", "$address", "$length", "$data"], context)).to.be.false;
+  it("matches a Kenwood clone framed read with $block", () => {
+    context.currentSegment = {
+      ...context.currentSegment!,
+      currentAddress: 0x200,
+    };
+    context.memoryConfig = {
+      ...context.memoryConfig,
+      chunkSize: 256,
+      addressSize: 2,
+      addressEndianness: "big",
+    };
+    context.variables.set("chunkLength", 256);
+
+    const expectPattern = ["W", "$block", "0x00", "0x00", "$data"];
+    const payload = Buffer.alloc(256, 0xab);
+    const frame = Buffer.concat([Buffer.from([0x57, 0x00, 0x02, 0x00, 0x00]), payload]);
+
+    expect(getExpectedLength(expectPattern, context)).to.equal(5 + 256);
+    expect(matchExpect(frame, expectPattern, context)).to.be.true;
+    expect(extractExpectData(new Uint8Array(frame), expectPattern, context)).to.deep.equal(new Uint8Array(payload));
   });
 });

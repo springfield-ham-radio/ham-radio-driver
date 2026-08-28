@@ -51,5 +51,20 @@ describe("token-utils", () => {
       expect(resolveSendTokens(["$length"], context)).to.deep.equal([8]);
       expect(resolveSendTokens(["$chunkSize"], context)).to.deep.equal([8]);
     });
+
+    it("encodes $block as chunk index, not byte address", () => {
+      context.currentSegment = {
+        ...context.currentSegment!,
+        currentAddress: 0x200,
+      };
+      context.memoryConfig = {
+        ...context.memoryConfig,
+        chunkSize: 256,
+        addressSize: 2,
+        addressEndianness: "big",
+      };
+
+      expect(resolveSendTokens(["R", "$block", "0x00", "0x00"], context)).to.deep.equal([0x52, 0x00, 0x02, 0x00, 0x00]);
+    });
   });
 });

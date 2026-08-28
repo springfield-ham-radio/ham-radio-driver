@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@serialport/parser-byte-length": "^13.0.0",
-    "@springfield/ham-radio-api": "^17.3.0",
+    "@springfield/ham-radio-api": "^17.4.0",
     "@springfield/ham-radio-utils": "^4.5.0",
     "loglayer": "^9.4.0",
     "serialport": "^13.0.0"

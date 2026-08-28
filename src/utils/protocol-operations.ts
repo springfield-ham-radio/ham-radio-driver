@@ -10,6 +10,7 @@ export interface ExchangeConfig {
   expect?: RadioExpect;
   timeout?: number;
   description?: string;
+  setBaudRate?: number;
 }
 
 const releaseParser = (context: ProtocolContext, parser: ByteLengthParser): void => {
@@ -32,6 +33,11 @@ export abstract class ProtocolOperationTemplate {
 
     if (context.progressIndicator?.isCanceled) {
       throw new CancelledException("Protocol operation was cancelled");
+    }
+
+    if (config.setBaudRate !== undefined && typeof context.port.update === "function") {
+      context.logger.debug(`Switching baud rate to ${config.setBaudRate}`);
+      await context.port.update({ baudRate: config.setBaudRate });
     }
 
     if (config.expect === undefined) {
@@ -72,8 +78,8 @@ export abstract class ProtocolOperationTemplate {
 
 export class SendReceiveOperation extends ProtocolOperationTemplate {
   protected validateConfiguration(config: ExchangeConfig): void {
-    if (config.send === undefined && config.expect === undefined) {
-      throw new Error("Exchange requires send and/or expect");
+    if (config.send === undefined && config.expect === undefined && config.setBaudRate === undefined) {
+      throw new Error("Exchange requires send, expect, and/or setBaudRate");
     }
   }
 
