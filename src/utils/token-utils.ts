@@ -1,4 +1,4 @@
-import type { RadioByteToken, RadioExpect, RadioExpectBytes } from "@springfield/ham-radio-api";
+import type { RadioByteToken, RadioExpect, RadioExpectBytes, RadioExpectUntil } from "@springfield/ham-radio-api";
 import type { ProtocolContext } from "../protocol-context.js";
 
 const HEX_BYTE = /^0x[0-9a-fA-F]{1,2}$/i;
@@ -7,6 +7,9 @@ export const inclusiveSegmentSize = (startAddress: number, endAddress: number): 
 
 export const isExpectBytes = (expect: RadioExpect): expect is RadioExpectBytes =>
   typeof expect === "object" && expect !== null && !Array.isArray(expect) && "bytes" in expect;
+
+export const isExpectUntil = (expect: RadioExpect): expect is RadioExpectUntil =>
+  typeof expect === "object" && expect !== null && !Array.isArray(expect) && "until" in expect;
 
 export const numberToBytes = (value: number, size: number, endianness: "big" | "little"): number[] => {
   const bytes: number[] = [];

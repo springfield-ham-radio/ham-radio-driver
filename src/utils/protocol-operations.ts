@@ -3,12 +3,13 @@ import type { ProtocolContext } from "../protocol-context.js";
 import { CancelledException } from "../cancelled-exception.js";
 import { ByteLengthParser } from "@serialport/parser-byte-length";
 import { extractExpectData, getExpectedLength, matchExpect } from "./expect-matcher.js";
-import { resolveSendTokens } from "./token-utils.js";
+import { isExpectUntil, parseLiteralByte, resolveSendTokens } from "./token-utils.js";
 
 export interface ExchangeConfig {
   send?: RadioByteToken[];
   expect?: RadioExpect;
   timeout?: number;
+  delay?: number;
   description?: string;
   setBaudRate?: number;
 }
@@ -21,12 +22,90 @@ const releaseParser = (context: ProtocolContext, parser: ByteLengthParser): void
   parser.removeAllListeners();
 };
 
+const asDataListenerTarget = (
+  port: ProtocolContext["port"],
+): { on: (event: string, listener: (data: Buffer) => void) => void; off: (event: string, listener: (data: Buffer) => void) => void } => {
+  const candidate = port as unknown as {
+    on?: (event: string, listener: (data: Buffer) => void) => void;
+    off?: (event: string, listener: (data: Buffer) => void) => void;
+    addListener?: (event: string, listener: (data: Buffer) => void) => void;
+    removeListener?: (event: string, listener: (data: Buffer) => void) => void;
+  };
+
+  const on = candidate.on ?? candidate.addListener;
+  const off = candidate.off ?? candidate.removeListener;
+
+  if (on === undefined || off === undefined) {
+    throw new Error("Serial port does not support data event listeners");
+  }
+
+  return { on, off };
+};
+
+/**
+ * Read bytes from the port until `delimiter`, excluding the delimiter.
+ * Line feeds are ignored so CR-LF CAT replies do not leave a stray LF for the next command.
+ */
+export const readUntilDelimiter = (
+  context: ProtocolContext,
+  delimiter: number,
+  timeoutMs: number,
+  description?: string,
+): Promise<Uint8Array> =>
+  new Promise((resolve, reject) => {
+    const chunks: number[] = [];
+    const { on, off } = asDataListenerTarget(context.port);
+
+    const onData = (data: Buffer | Uint8Array): void => {
+      for (const byte of data) {
+        if (byte === 0x0a) {
+          continue;
+        }
+
+        if (byte === delimiter) {
+          // A bare CR is a Kenwood wake/flush echo, not a command reply.
+          if (chunks.length === 0) {
+            continue;
+          }
+
+          finish();
+          resolve(Uint8Array.from(chunks));
+          return;
+        }
+
+        chunks.push(byte);
+      }
+    };
+
+    const finish = (): void => {
+      clearTimeout(timeoutId);
+      off.call(context.port, "data", onData);
+    };
+
+    const timeoutId = setTimeout(() => {
+      finish();
+      reject(new Error(`Timeout waiting for delimiter: ${description || "operation"}`));
+    }, timeoutMs);
+
+    on.call(context.port, "data", onData);
+  });
+
+const delayMs = async (milliseconds: number | undefined): Promise<void> => {
+  if (milliseconds === undefined || milliseconds <= 0) {
+    return;
+  }
+
+  await new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+};
+
 export abstract class ProtocolOperationTemplate {
   protected abstract validateConfiguration(config: ExchangeConfig): void;
   protected abstract setupParser(config: ExchangeConfig, context: ProtocolContext): ByteLengthParser;
   protected abstract handleData(data: Buffer, config: ExchangeConfig, context: ProtocolContext): Uint8Array;
   protected abstract handleError(error: Error, config: ExchangeConfig): void;
-  protected abstract sendData(config: ExchangeConfig, context: ProtocolContext): void;
+  protected abstract sendData(config: ExchangeConfig, context: ProtocolContext): void | Promise<void>;
 
   async execute(config: ExchangeConfig, context: ProtocolContext): Promise<Uint8Array> {
     this.validateConfiguration(config);
@@ -41,8 +120,23 @@ export abstract class ProtocolOperationTemplate {
     }
 
     if (config.expect === undefined) {
-      this.sendData(config, context);
+      await this.sendData(config, context);
+      await delayMs(config.delay);
       return new Uint8Array(0);
+    }
+
+    if (isExpectUntil(config.expect)) {
+      const delimiter = parseLiteralByte(config.expect.until);
+
+      if (delimiter === undefined) {
+        throw new Error(`Invalid until delimiter: ${String(config.expect.until)}`);
+      }
+
+      const pending = readUntilDelimiter(context, delimiter, config.timeout || 5000, config.description);
+      await this.sendData(config, context);
+      await delayMs(config.delay);
+      const payload = await pending;
+      return this.handleData(Buffer.from(payload), config, context);
     }
 
     return new Promise((resolve, reject) => {
@@ -71,7 +165,9 @@ export abstract class ProtocolOperationTemplate {
         reject(error);
       });
 
-      this.sendData(config, context);
+      void Promise.resolve(this.sendData(config, context))
+        .then(() => delayMs(config.delay))
+        .catch(reject);
     });
   }
 }
@@ -113,7 +209,7 @@ export class SendReceiveOperation extends ProtocolOperationTemplate {
     // Error handling is done in the template method
   }
 
-  protected sendData(config: ExchangeConfig, context: ProtocolContext): void {
+  protected async sendData(config: ExchangeConfig, context: ProtocolContext): Promise<void> {
     if (config.send === undefined) {
       return;
     }
@@ -122,6 +218,29 @@ export class SendReceiveOperation extends ProtocolOperationTemplate {
     const sendDataArray = new Uint8Array(bytes);
     context.variables.set("lastSentData", sendDataArray);
     context.logger.debug(`Sending data: ${Buffer.from(sendDataArray).toString("hex")}`);
-    context.port.write(sendDataArray);
+
+    await new Promise<void>((resolve, reject) => {
+      let settled = false;
+      const finish = (error?: Error | null) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+
+        if (error) {
+          reject(error);
+          return;
+        }
+
+        resolve();
+      };
+
+      context.port.write(sendDataArray, finish);
+
+      if (context.port.write.length < 2) {
+        finish();
+      }
+    });
   }
 }

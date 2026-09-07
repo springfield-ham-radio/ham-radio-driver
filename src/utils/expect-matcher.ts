@@ -1,12 +1,16 @@
 import type { RadioByteToken, RadioExpect } from "@springfield/ham-radio-api";
 import type { ProtocolContext } from "../protocol-context.js";
-import { getChunkLength, getCurrentAddress, isExpectBytes, numberToBytes, parseLiteralByte } from "./token-utils.js";
+import { getChunkLength, getCurrentAddress, isExpectBytes, isExpectUntil, numberToBytes, parseLiteralByte } from "./token-utils.js";
 
 const expectTokens = (expect: RadioByteToken | RadioByteToken[]): RadioByteToken[] => (Array.isArray(expect) ? expect : [expect]);
 
 export const getExpectedLength = (expect: RadioExpect, context: ProtocolContext): number => {
   if (isExpectBytes(expect)) {
     return expect.bytes;
+  }
+
+  if (isExpectUntil(expect)) {
+    throw new Error("Delimiter expects do not have a fixed length");
   }
 
   let length = 0;
@@ -34,6 +38,10 @@ const bytesEqual = (actual: Uint8Array | Buffer, offset: number, expected: numbe
 export const matchExpect = (data: Buffer, expect: RadioExpect, context: ProtocolContext): boolean => {
   if (isExpectBytes(expect)) {
     return data.length === expect.bytes;
+  }
+
+  if (isExpectUntil(expect)) {
+    return true;
   }
 
   let offset = 0;
@@ -85,7 +93,7 @@ export const matchExpect = (data: Buffer, expect: RadioExpect, context: Protocol
 };
 
 export const extractExpectData = (data: Uint8Array, expect: RadioExpect, context: ProtocolContext): Uint8Array => {
-  if (isExpectBytes(expect)) {
+  if (isExpectBytes(expect) || isExpectUntil(expect)) {
     return data;
   }
 

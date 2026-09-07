@@ -18,6 +18,12 @@ describe("expect-matcher", () => {
     expect(getExpectedLength("0x06", context)).to.equal(1);
   });
 
+  it("treats until expects as variable-length payloads", () => {
+    expect(matchExpect(Buffer.from("ID TH-F6A"), { until: "0x0D" }, context)).to.be.true;
+    expect(() => getExpectedLength({ until: "0x0D" }, context)).to.throw(/fixed length/);
+    expect(extractExpectData(new Uint8Array([0x49, 0x44]), { until: "0x0D" }, context)).to.deep.equal(new Uint8Array([0x49, 0x44]));
+  });
+
   it("matches opaque byte counts", () => {
     expect(matchExpect(Buffer.from([1, 2, 3, 4, 5, 6, 7, 8]), { bytes: 8 }, context)).to.be.true;
     expect(matchExpect(Buffer.from([1, 2, 3]), { bytes: 8 }, context)).to.be.false;

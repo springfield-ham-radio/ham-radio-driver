@@ -212,6 +212,32 @@ describe('protocol-operations', () => {
 
         expect(unpiped).to.have.length(1);
       });
+
+      it("reads until a CR delimiter and ignores line feeds", async () => {
+        const operation = new SendReceiveOperation();
+        (mockContext.port as any).write = () => true;
+
+        const pending = operation.execute({ send: ["I", "D", "0x0D"], expect: { until: "0x0D" }, timeout: 200 }, mockContext);
+        setImmediate(() => {
+          mockPort.emit("data", Buffer.from("ID TH-F6A\r\n"));
+        });
+
+        const result = await pending;
+        expect(Buffer.from(result).toString("ascii")).to.equal("ID TH-F6A");
+      });
+
+      it("ignores empty CR wake echoes before the CAT reply", async () => {
+        const operation = new SendReceiveOperation();
+        (mockContext.port as any).write = () => true;
+
+        const pending = operation.execute({ send: ["0x0D", "I", "D", "0x0D"], expect: { until: "0x0D" }, timeout: 200 }, mockContext);
+        setImmediate(() => {
+          mockPort.emit("data", Buffer.from("\rID TH-F6A\r"));
+        });
+
+        const result = await pending;
+        expect(Buffer.from(result).toString("ascii")).to.equal("ID TH-F6A");
+      });
     });
   });
 });

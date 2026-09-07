@@ -3,6 +3,7 @@
  */
 
 export * from "./expect-matcher.js";
+export * from "./kenwood-th-f6-cat.js";
 export * from "./log-comparator.js";
 export * from "./progress-utils.js";
 export * from "./protocol-operations.js";

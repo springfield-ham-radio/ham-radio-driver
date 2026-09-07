@@ -1,6 +1,6 @@
 import type { RadioMemoryConfig, RadioProtocolStep } from "@springfield/ham-radio-api";
 import type { ProtocolContext } from "../protocol-context.js";
-import { isExchangeStep, isReadStep, isWriteStep } from "./step-guards.js";
+import { isCatReadStep, isCatWriteStep, isExchangeStep, isReadStep, isWriteStep } from "./step-guards.js";
 import { countWritableChunks, writeLoopOptions } from "./write-chunks.js";
 
 /**
@@ -22,6 +22,12 @@ export function countProtocolProgressUnits(steps: RadioProtocolStep[], memoryCon
     }
     if (isWriteStep(step)) {
       return total + countWritableChunks(step.write.segments, memoryConfig, writeLoopOptions(step.write));
+    }
+    if (isCatReadStep(step)) {
+      return total + step.catRead.count;
+    }
+    if (isCatWriteStep(step)) {
+      return total + step.catWrite.count;
     }
     if (isExchangeStep(step)) {
       return total + 1;

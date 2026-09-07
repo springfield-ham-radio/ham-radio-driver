@@ -57,6 +57,22 @@ describe("progress-utils", () => {
     expect(countProtocolProgressUnits(steps, memoryConfig)).to.equal(8);
   });
 
+  it("counts one progress unit per CAT memory index", () => {
+    const steps: RadioProtocolStep[] = [
+      { expect: { until: "0x0D" }, send: ["I", "D", "0x0D"] },
+      {
+        catRead: {
+          count: 400,
+          pack: "kenwood-th-f6",
+          recordSize: 32,
+          segment: "channels",
+        },
+      },
+    ];
+
+    expect(countProtocolProgressUnits(steps, memoryConfig)).to.equal(401);
+  });
+
   it("advances progress against totalProgressUnits", () => {
     const values: number[] = [];
     const context = ProtocolContextFactory.build({

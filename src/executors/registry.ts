@@ -4,6 +4,8 @@ import { StepExecutor } from "./base.js";
 import { ReadExecutor } from "./read-executor.js";
 import { WriteExecutor } from "./write-executor.js";
 import { ExchangeExecutor } from "./exchange-executor.js";
+import { CatReadExecutor } from "./cat-read-executor.js";
+import { CatWriteExecutor } from "./cat-write-executor.js";
 
 /**
  * Dispatches protocol steps to the first matching executor.
@@ -13,7 +15,7 @@ export class StepExecutorRegistry {
   private executors: StepExecutor[] = [];
 
   constructor() {
-    this.executors = [new ReadExecutor(), new WriteExecutor(), new ExchangeExecutor()];
+    this.executors = [new CatReadExecutor(), new CatWriteExecutor(), new ReadExecutor(), new WriteExecutor(), new ExchangeExecutor()];
   }
 
   async executeStep(step: RadioProtocolStep, context: ProtocolContext): Promise<void> {
