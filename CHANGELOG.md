@@ -1,3 +1,13 @@
+## [3.3.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.2.0...v3.3.0) (2026-09-08)
+
+### Features
+
+* execute Kenwood live CAT memory read and write ([32b087c](https://github.com/springfield-ham-radio/ham-radio-driver/commit/32b087c15dc99bdca5626593bd7ff576d6c68d95))
+
+### Bug Fixes
+
+* update [@springfield](https://github.com/springfield) packages to API 17.5.0 and utils 4.9.0 ([b8654d8](https://github.com/springfield-ham-radio/ham-radio-driver/commit/b8654d858aed6accb0f1468812481de95e79c8b9))
+
 ## [3.2.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.1.2...v3.2.0) (2026-08-28)
 
 ### Features
