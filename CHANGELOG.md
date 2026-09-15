@@ -1,3 +1,9 @@
+## [3.4.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.3.5...v3.4.0) (2026-09-15)
+
+### Features
+
+* honor delay on chunked memory reads ([b49bc40](https://github.com/springfield-ham-radio/ham-radio-driver/commit/b49bc40a644c9e7390f0ebbe9c632d3a1b51cf10))
+
 ## [3.3.5](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.3.4...v3.3.5) (2026-09-14)
 
 ### Bug Fixes
