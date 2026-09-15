@@ -5,6 +5,7 @@ import { executeExchange, extractDataFromResponse } from "../utils/step-utils.js
 import { inclusiveSegmentSize } from "../utils/token-utils.js";
 import { isReadStep } from "../utils/step-guards.js";
 import { advanceProgress } from "../utils/progress-utils.js";
+import { readLoopOptions, wait } from "../utils/write-chunks.js";
 import { StepExecutor } from "./base.js";
 
 export class ReadExecutor implements StepExecutor {
@@ -18,6 +19,7 @@ export class ReadExecutor implements StepExecutor {
     }
 
     const { ack, expect, segments: segmentNames, send, timeout } = step.read;
+    const { delay } = readLoopOptions(step.read);
 
     if (step.description) {
       context.logger.debug(step.description);
@@ -59,6 +61,7 @@ export class ReadExecutor implements StepExecutor {
       const segmentData = await this.readSegmentData({
         ack,
         context,
+        delay: delay ?? 0,
         expect,
         segmentConfig,
         send,
@@ -78,6 +81,7 @@ export class ReadExecutor implements StepExecutor {
   private async readSegmentData(params: {
     ack?: RadioExchange;
     context: ProtocolContext;
+    delay: number;
     expect: RadioExpect;
     segmentConfig: RadioMemorySegment;
     send: RadioByteToken[];
@@ -127,6 +131,8 @@ export class ReadExecutor implements StepExecutor {
         endSent = params.context.variables.get("lastSentData");
         endReceived = params.context.variables.get("lastReceivedData");
       }
+
+      await wait(params.delay);
 
       chunkLogs.push({
         address,

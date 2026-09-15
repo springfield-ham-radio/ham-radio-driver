@@ -1,11 +1,17 @@
-import type { RadioMemoryConfig, RadioMemorySegment, RadioWriteStep } from "@springfield/ham-radio-api";
+import type { RadioMemoryConfig, RadioMemorySegment, RadioReadStep, RadioWriteStep } from "@springfield/ham-radio-api";
 import { inclusiveSegmentSize } from "./token-utils.js";
+
+export interface ReadChunkOptions {
+  delay?: number;
+}
 
 export interface WriteChunkOptions {
   chunkSize?: number;
   delay?: number;
   skip?: RadioMemorySegment[];
 }
+
+export const readLoopOptions = (read: RadioReadStep["read"]): ReadChunkOptions => read as ReadChunkOptions;
 
 export const writeLoopOptions = (write: RadioWriteStep["write"]): WriteChunkOptions => write as WriteChunkOptions;
 
