@@ -1,3 +1,9 @@
+## [3.4.2](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.4.1...v3.4.2) (2026-09-24)
+
+### Bug Fixes
+
+* update @springfield/ham-radio-utils to 4.14.0 ([a8562db](https://github.com/springfield-ham-radio/ham-radio-driver/commit/a8562dba310b324a721b3cb17bd262bdf4b9e66e))
+
 ## [3.4.1](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.4.0...v3.4.1) (2026-09-15)
 
 ### Bug Fixes
