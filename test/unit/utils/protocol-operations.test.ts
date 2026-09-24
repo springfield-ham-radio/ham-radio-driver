@@ -1,5 +1,4 @@
-import { describe, it, beforeEach, afterEach } from 'node:test';
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { EventEmitter } from 'events';
 import { ProtocolOperationTemplate, SendReceiveOperation } from '@src/utils/protocol-operations.js';
 import { CancelledException } from '@src/cancelled-exception.js';
@@ -70,12 +69,12 @@ describe('protocol-operations', () => {
         const config = { test: true, timeout: 1000, expect: '0x06' };
         const result = await operation.execute(config as any, mockContext);
 
-        expect(operation.validateConfigurationCalled).to.be.true;
-        expect(operation.setupParserCalled).to.be.true;
-        expect(operation.handleDataCalled).to.be.true;
-        expect(operation.sendDataCalled).to.be.true;
-        expect(operation.handleErrorCalled).to.be.false;
-        expect(result).to.deep.equal(new Uint8Array([0x01, 0x02, 0x03]));
+        expect(operation.validateConfigurationCalled).toBe(true);
+        expect(operation.setupParserCalled).toBe(true);
+        expect(operation.handleDataCalled).toBe(true);
+        expect(operation.sendDataCalled).toBe(true);
+        expect(operation.handleErrorCalled).toBe(false);
+        expect(result).toEqual(new Uint8Array([0x01, 0x02, 0x03]));
       });
 
       it('should throw CancelledException when operation is cancelled', async () => {
@@ -86,10 +85,10 @@ describe('protocol-operations', () => {
           await operation.execute(config as any, mockContext);
           expect.fail('Should have thrown CancelledException');
         } catch (error) {
-          expect(error).to.be.instanceOf(CancelledException);
+          expect(error).toBeInstanceOf(CancelledException);
         }
-        expect(operation.validateConfigurationCalled).to.be.true;
-        expect(operation.setupParserCalled).to.be.false;
+        expect(operation.validateConfigurationCalled).toBe(true);
+        expect(operation.setupParserCalled).toBe(false);
       });
 
       it('should throw error when configuration validation fails', async () => {
@@ -99,8 +98,8 @@ describe('protocol-operations', () => {
           await operation.execute(config as any, mockContext);
           expect.fail('Should have thrown error');
         } catch (error) {
-          expect(error).to.be.instanceOf(Error);
-          expect((error as Error).message).to.equal('Test configuration required');
+          expect(error).toBeInstanceOf(Error);
+          expect((error as Error).message).toBe('Test configuration required');
         }
       });
 
@@ -116,7 +115,7 @@ describe('protocol-operations', () => {
           await operation.execute(config as any, mockContext);
           expect.fail('Should have timed out');
         } catch (error) {
-          expect((error as Error).message).to.include('Timeout waiting for response');
+          expect((error as Error).message).toContain('Timeout waiting for response');
         }
       });
     });
@@ -132,24 +131,24 @@ describe('protocol-operations', () => {
 
     describe('validateConfiguration()', () => {
       it('should accept send and/or expect', () => {
-        expect(() => operation['validateConfiguration']({ send: [0x01], expect: '0x06' })).to.not.throw();
-        expect(() => operation['validateConfiguration']({ send: [0x01] })).to.not.throw();
-        expect(() => operation['validateConfiguration']({ expect: '0x06' })).to.not.throw();
+        expect(() => operation['validateConfiguration']({ send: [0x01], expect: '0x06' })).not.toThrow();
+        expect(() => operation['validateConfiguration']({ send: [0x01] })).not.toThrow();
+        expect(() => operation['validateConfiguration']({ expect: '0x06' })).not.toThrow();
       });
 
       it('should throw when both send and expect are missing', () => {
-        expect(() => operation['validateConfiguration']({})).to.throw('Exchange requires send, expect, and/or setBaudRate');
+        expect(() => operation['validateConfiguration']({})).toThrow('Exchange requires send, expect, and/or setBaudRate');
       });
     });
 
     describe('handleData()', () => {
       it('should validate and extract data for a valid ACK', () => {
         const result = operation['handleData'](Buffer.from([0x06]), { send: [0x01], expect: '0x06' }, mockContext);
-        expect(result).to.deep.equal(new Uint8Array([0x06]));
+        expect(result).toEqual(new Uint8Array([0x06]));
       });
 
       it('should throw error for invalid response', () => {
-        expect(() => operation['handleData'](Buffer.from([0x07]), { send: [0x01], expect: '0x06' }, mockContext)).to.throw('Invalid response pattern');
+        expect(() => operation['handleData'](Buffer.from([0x07]), { send: [0x01], expect: '0x06' }, mockContext)).toThrow('Invalid response pattern');
       });
     });
 
@@ -167,7 +166,7 @@ describe('protocol-operations', () => {
         };
 
         operation['sendData']({ send: [0x01, '$address', 'A'], expect: '0x06' }, mockContext);
-        expect(writtenData).to.deep.equal(new Uint8Array([1, 16, 0, 65]));
+        expect(writtenData).toEqual(new Uint8Array([1, 16, 0, 65]));
       });
     });
 
@@ -190,8 +189,8 @@ describe('protocol-operations', () => {
 
         await operation.execute({ send: [0x06], expect: '0x06', timeout: 1000 }, mockContext);
 
-        expect(piped).to.have.length(1);
-        expect(unpiped).to.deep.equal(piped);
+        expect(piped).toHaveLength(1);
+        expect(unpiped).toEqual(piped);
       });
 
       it('should unpipe the parser after a receive timeout', async () => {
@@ -207,10 +206,10 @@ describe('protocol-operations', () => {
           await operation.execute({ send: [0x06], expect: '0x06', timeout: 20 }, mockContext);
           expect.fail('Should have timed out');
         } catch (error) {
-          expect((error as Error).message).to.include('Timeout waiting for response');
+          expect((error as Error).message).toContain('Timeout waiting for response');
         }
 
-        expect(unpiped).to.have.length(1);
+        expect(unpiped).toHaveLength(1);
       });
 
       it("reads until a CR delimiter and ignores line feeds", async () => {
@@ -223,7 +222,7 @@ describe('protocol-operations', () => {
         });
 
         const result = await pending;
-        expect(Buffer.from(result).toString("ascii")).to.equal("ID TH-F6A");
+        expect(Buffer.from(result).toString("ascii")).toBe("ID TH-F6A");
       });
 
       it("ignores empty CR wake echoes before the CAT reply", async () => {
@@ -236,7 +235,7 @@ describe('protocol-operations', () => {
         });
 
         const result = await pending;
-        expect(Buffer.from(result).toString("ascii")).to.equal("ID TH-F6A");
+        expect(Buffer.from(result).toString("ascii")).toBe("ID TH-F6A");
       });
     });
   });

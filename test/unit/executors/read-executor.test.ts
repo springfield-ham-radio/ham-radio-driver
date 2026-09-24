@@ -1,5 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
-import { expect } from "chai";
+import { beforeEach, describe, expect, it } from "vitest";
 import { EventEmitter } from "events";
 import type { RadioProtocolStep } from "@springfield/ham-radio-api";
 import { ReadExecutor } from "../../../src/executors/read-executor.js";
@@ -87,7 +86,7 @@ describe("ReadExecutor", () => {
     await executor.execute(step, context);
     const elapsedMs = Date.now() - startedAt;
 
-    expect(context.memoryBuffer.slice(0, 8)).to.deep.equal(Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8]));
-    expect(elapsedMs).to.be.at.least(80);
+    expect(context.memoryBuffer.slice(0, 8)).toEqual(Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8]));
+    expect(elapsedMs).toBeGreaterThanOrEqual(80);
   });
 });

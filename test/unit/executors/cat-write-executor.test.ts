@@ -1,5 +1,4 @@
-import { describe, it } from "node:test";
-import { expect } from "chai";
+import { describe, expect, it } from "vitest";
 import { EventEmitter } from "events";
 import { CatWriteExecutor } from "../../../src/executors/cat-write-executor.js";
 import { ProtocolContextFactory } from "../utils/test-factories.js";
@@ -73,8 +72,8 @@ describe("CatWriteExecutor", () => {
       context,
     );
 
-    expect(port.writes[0]).to.match(/^MW 0,000,/);
-    expect(port.writes).to.include("MNA 000,CALL    \r");
-    expect(port.writes).to.include("MW 0,001\r");
+    expect(port.writes[0]).toMatch(/^MW 0,000,/);
+    expect(port.writes).toContain("MNA 000,CALL    \r");
+    expect(port.writes).toContain("MW 0,001\r");
   });
 });

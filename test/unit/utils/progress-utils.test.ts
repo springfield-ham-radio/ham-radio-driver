@@ -1,5 +1,4 @@
-import { describe, it } from "node:test";
-import { expect } from "chai";
+import { describe, expect, it } from "vitest";
 import type { RadioMemoryConfig, RadioProtocolStep } from "@springfield/ham-radio-api";
 import {
   advanceProgress,
@@ -20,8 +19,8 @@ describe("progress-utils", () => {
   };
 
   it("counts chunk units from inclusive segment bounds", () => {
-    expect(countSegmentChunkUnits(["channels"], memoryConfig)).to.equal(2);
-    expect(countSegmentChunkUnits(["channels", "settings"], memoryConfig)).to.equal(4);
+    expect(countSegmentChunkUnits(["channels"], memoryConfig)).toBe(2);
+    expect(countSegmentChunkUnits(["channels", "settings"], memoryConfig)).toBe(4);
   });
 
   it("weights protocol progress by exchanges plus chunks", () => {
@@ -37,7 +36,7 @@ describe("progress-utils", () => {
       },
     ];
 
-    expect(countProtocolProgressUnits(steps, memoryConfig)).to.equal(6);
+    expect(countProtocolProgressUnits(steps, memoryConfig)).toBe(6);
   });
 
   it("uses write chunkSize and skip when counting progress", () => {
@@ -54,7 +53,7 @@ describe("progress-utils", () => {
       },
     ];
 
-    expect(countProtocolProgressUnits(steps, memoryConfig)).to.equal(8);
+    expect(countProtocolProgressUnits(steps, memoryConfig)).toBe(8);
   });
 
   it("counts one progress unit per CAT memory index", () => {
@@ -70,7 +69,7 @@ describe("progress-utils", () => {
       },
     ];
 
-    expect(countProtocolProgressUnits(steps, memoryConfig)).to.equal(401);
+    expect(countProtocolProgressUnits(steps, memoryConfig)).toBe(401);
   });
 
   it("advances progress against totalProgressUnits", () => {
@@ -88,7 +87,7 @@ describe("progress-utils", () => {
 
     advanceProgress(context);
     advanceProgress(context, 2);
-    expect(values).to.deep.equal([0.25, 0.75]);
-    expect(context.completedProgressUnits).to.equal(3);
+    expect(values).toEqual([0.25, 0.75]);
+    expect(context.completedProgressUnits).toBe(3);
   });
 });

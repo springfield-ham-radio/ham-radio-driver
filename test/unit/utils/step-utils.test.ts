@@ -1,5 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
-import { expect } from "chai";
+import { beforeEach, describe, expect, it } from "vitest";
 import { EventEmitter } from "events";
 import { extractDataFromResponse, executeExchange } from "@src/utils/step-utils.js";
 import type { ProtocolContext } from "@src/protocol-context.js";
@@ -15,14 +14,14 @@ describe("step-utils", () => {
   describe("extractDataFromResponse()", () => {
     it("returns the full payload for an exact ACK", () => {
       const data = new Uint8Array([0x06]);
-      expect(extractDataFromResponse(data, "0x06", mockContext)).to.deep.equal(data);
+      expect(extractDataFromResponse(data, "0x06", mockContext)).toEqual(data);
     });
 
     it("extracts $data from a framed response", () => {
       const payload = new Uint8Array(64).fill(0x11);
       const frame = new Uint8Array([0x58, 0x10, 0x00, 64, ...payload]);
       const extracted = extractDataFromResponse(frame, ["X", "$address", "$length", "$data"], mockContext);
-      expect(extracted).to.deep.equal(payload);
+      expect(extracted).toEqual(payload);
     });
   });
 
@@ -37,8 +36,8 @@ describe("step-utils", () => {
       };
 
       const result = await executeExchange({ send: ["0x02"], expect: "0x06", timeout: 1000 }, mockContext);
-      expect(written).to.deep.equal(new Uint8Array([0x02]));
-      expect(result).to.deep.equal(new Uint8Array([0x06]));
+      expect(written).toEqual(new Uint8Array([0x02]));
+      expect(result).toEqual(new Uint8Array([0x06]));
     });
   });
 });

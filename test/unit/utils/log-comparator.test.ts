@@ -1,5 +1,4 @@
-import { describe, it, beforeEach, afterEach } from 'node:test';
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import * as fs from 'fs';
 import { LogComparator } from '../../../src/utils/log-comparator.js';
 import { TempDir } from '../../utils/temp-dir.js';
@@ -24,7 +23,7 @@ describe('LogComparator', () => {
     it('should create comparator with log file paths', () => {
       const comparator = new LogComparator(snifferLogPath, driverLogPath);
 
-      expect(comparator).to.be.instanceOf(LogComparator);
+      expect(comparator).toBeInstanceOf(LogComparator);
     });
   });
 
@@ -46,22 +45,22 @@ describe('LogComparator', () => {
       // Access private method for testing
       const entries = (comparator as any).parseLogFile(snifferLogPath, 'sniffer');
 
-      expect(entries).to.have.length(3);
-      expect(entries[0]).to.deep.include({
+      expect(entries).toHaveLength(3);
+      expect(entries[0]).toMatchObject({
         timestamp: '000.123',
         direction: 'SEND',
         data: '01 02 03',
         source: 'sniffer',
         lineNumber: 5,
       });
-      expect(entries[1]).to.deep.include({
+      expect(entries[1]).toMatchObject({
         timestamp: '000.456',
         direction: 'RECV',
         data: '04 05 06',
         source: 'sniffer',
         lineNumber: 6,
       });
-      expect(entries[2]).to.deep.include({
+      expect(entries[2]).toMatchObject({
         timestamp: '000.789',
         direction: 'SEND',
         data: '07 08 09',
@@ -90,9 +89,9 @@ describe('LogComparator', () => {
 
       const entries = (comparator as any).parseLogFile(snifferLogPath, 'sniffer');
 
-      expect(entries).to.have.length(2);
-      expect(entries[0].data).to.equal('01 02 03');
-      expect(entries[1].data).to.equal('04 05 06');
+      expect(entries).toHaveLength(2);
+      expect(entries[0].data).toBe('01 02 03');
+      expect(entries[1].data).toBe('04 05 06');
     });
 
     it('should handle missing log file', () => {
@@ -100,7 +99,7 @@ describe('LogComparator', () => {
 
       const entries = (comparator as any).parseLogFile(snifferLogPath, 'sniffer');
 
-      expect(entries).to.be.an('array').that.is.empty;
+      expect(entries).toEqual([]);
     });
 
     it('should handle log entries without timestamps', () => {
@@ -114,12 +113,12 @@ describe('LogComparator', () => {
 
       const entries = (comparator as any).parseLogFile(snifferLogPath, 'sniffer');
 
-      expect(entries).to.have.length(2);
-      expect(entries[0].timestamp).to.equal('');
-      expect(entries[0].data).to.equal('01 02 03');
-      expect(entries[1].timestamp).to.equal('');
-      expect(entries[1].data).to.equal('04 05 06');
-      expect(entries[1].description).to.equal('Response data');
+      expect(entries).toHaveLength(2);
+      expect(entries[0].timestamp).toBe('');
+      expect(entries[0].data).toBe('01 02 03');
+      expect(entries[1].timestamp).toBe('');
+      expect(entries[1].data).toBe('04 05 06');
+      expect(entries[1].description).toBe('Response data');
     });
   });
 
@@ -130,7 +129,7 @@ describe('LogComparator', () => {
 
       const entry = (comparator as any).parseLogLine(line, 'sniffer', 1);
 
-      expect(entry).to.deep.include({
+      expect(entry).toMatchObject({
         timestamp: '000.123',
         direction: 'SEND',
         data: '01 02 03',
@@ -145,7 +144,7 @@ describe('LogComparator', () => {
 
       const entry = (comparator as any).parseLogLine(line, 'driver', 2);
 
-      expect(entry).to.deep.include({
+      expect(entry).toMatchObject({
         timestamp: '000.456',
         direction: 'RECV',
         data: '04 05 06',
@@ -161,7 +160,7 @@ describe('LogComparator', () => {
 
       const entry = (comparator as any).parseLogLine(line, 'sniffer', 1);
 
-      expect(entry).to.deep.include({
+      expect(entry).toMatchObject({
         timestamp: '',
         direction: 'SEND',
         data: '01 02 03',
@@ -176,7 +175,7 @@ describe('LogComparator', () => {
 
       const entry = (comparator as any).parseLogLine(line, 'sniffer', 1);
 
-      expect(entry).to.be.null;
+      expect(entry).toBeNull();
     });
 
         it('should handle log line with only direction', () => {
@@ -185,7 +184,7 @@ describe('LogComparator', () => {
 
       const entry = (comparator as any).parseLogLine(line, 'sniffer', 1);
 
-      expect(entry).to.be.null;
+      expect(entry).toBeNull();
     });
   });
 
@@ -209,11 +208,11 @@ describe('LogComparator', () => {
       const comparator = new LogComparator(snifferLogPath, driverLogPath);
       const result = comparator.compareLogs();
 
-      expect(result.matchingEntries).to.equal(3);
-      expect(result.totalSnifferEntries).to.equal(3);
-      expect(result.totalDriverEntries).to.equal(3);
-      expect(result.unmatchedSnifferEntries).to.have.length(0);
-      expect(result.unmatchedDriverEntries).to.have.length(0);
+      expect(result.matchingEntries).toBe(3);
+      expect(result.totalSnifferEntries).toBe(3);
+      expect(result.totalDriverEntries).toBe(3);
+      expect(result.unmatchedSnifferEntries).toHaveLength(0);
+      expect(result.unmatchedDriverEntries).toHaveLength(0);
     });
 
     it('should identify unmatched entries', () => {
@@ -235,11 +234,11 @@ describe('LogComparator', () => {
       const comparator = new LogComparator(snifferLogPath, driverLogPath);
       const result = comparator.compareLogs();
 
-      expect(result.matchingEntries).to.equal(2);
-      expect(result.unmatchedSnifferEntries).to.have.length(1);
-      expect(result.unmatchedDriverEntries).to.have.length(1);
-      expect(result.unmatchedSnifferEntries[0].data).to.equal('07 08 09');
-      expect(result.unmatchedDriverEntries[0].data).to.equal('0A 0B 0C');
+      expect(result.matchingEntries).toBe(2);
+      expect(result.unmatchedSnifferEntries).toHaveLength(1);
+      expect(result.unmatchedDriverEntries).toHaveLength(1);
+      expect(result.unmatchedSnifferEntries[0].data).toBe('07 08 09');
+      expect(result.unmatchedDriverEntries[0].data).toBe('0A 0B 0C');
     });
 
     it('should match entries with different timestamps', () => {
@@ -259,8 +258,8 @@ describe('LogComparator', () => {
       const comparator = new LogComparator(snifferLogPath, driverLogPath);
       const result = comparator.compareLogs();
 
-      expect(result.matchingEntries).to.equal(2);
-      expect(result.timingAnalysis.averageTimeDifference).to.be.greaterThan(0);
+      expect(result.matchingEntries).toBe(2);
+      expect(result.timingAnalysis.averageTimeDifference).toBeGreaterThan(0);
     });
 
     it('should handle entries without timestamps', () => {
@@ -280,7 +279,7 @@ describe('LogComparator', () => {
       const comparator = new LogComparator(snifferLogPath, driverLogPath);
       const result = comparator.compareLogs();
 
-      expect(result.matchingEntries).to.equal(2);
+      expect(result.matchingEntries).toBe(2);
     });
 
     it('should handle empty log files', () => {
@@ -290,18 +289,18 @@ describe('LogComparator', () => {
       const comparator = new LogComparator(snifferLogPath, driverLogPath);
       const result = comparator.compareLogs();
 
-      expect(result.matchingEntries).to.equal(0);
-      expect(result.totalSnifferEntries).to.equal(0);
-      expect(result.totalDriverEntries).to.equal(0);
+      expect(result.matchingEntries).toBe(0);
+      expect(result.totalSnifferEntries).toBe(0);
+      expect(result.totalDriverEntries).toBe(0);
     });
 
     it('should handle missing log files', () => {
       const comparator = new LogComparator(snifferLogPath, driverLogPath);
       const result = comparator.compareLogs();
 
-      expect(result.matchingEntries).to.equal(0);
-      expect(result.totalSnifferEntries).to.equal(0);
-      expect(result.totalDriverEntries).to.equal(0);
+      expect(result.matchingEntries).toBe(0);
+      expect(result.totalSnifferEntries).toBe(0);
+      expect(result.totalDriverEntries).toBe(0);
     });
   });
 
@@ -312,9 +311,9 @@ describe('LogComparator', () => {
 
       const analysis = (comparator as any).calculateTimingAnalysis(timeDifferences);
 
-      expect(analysis.averageTimeDifference).to.equal(0.3);
-      expect(analysis.maxTimeDifference).to.equal(0.5);
-      expect(analysis.minTimeDifference).to.equal(0.1);
+      expect(analysis.averageTimeDifference).toBe(0.3);
+      expect(analysis.maxTimeDifference).toBe(0.5);
+      expect(analysis.minTimeDifference).toBe(0.1);
     });
 
     it('should handle empty time differences array', () => {
@@ -323,9 +322,9 @@ describe('LogComparator', () => {
 
       const analysis = (comparator as any).calculateTimingAnalysis(timeDifferences);
 
-      expect(analysis.averageTimeDifference).to.equal(0);
-      expect(analysis.maxTimeDifference).to.equal(0);
-      expect(analysis.minTimeDifference).to.equal(0);
+      expect(analysis.averageTimeDifference).toBe(0);
+      expect(analysis.maxTimeDifference).toBe(0);
+      expect(analysis.minTimeDifference).toBe(0);
     });
   });
 
@@ -350,14 +349,14 @@ describe('LogComparator', () => {
       const result = comparator.compareLogs();
       const report = comparator.generateReport(result);
 
-      expect(report).to.include('=== Log Comparison Report ===');
-      expect(report).to.include('Total Sniffer Entries: 3');
-      expect(report).to.include('Total Driver Entries: 3');
-      expect(report).to.include('Matching Entries: 2');
-      expect(report).to.include('Match Rate: 66.7%');
-      expect(report).to.include('Timing Analysis:');
-      expect(report).to.include('Unmatched Sniffer Entries (1):');
-      expect(report).to.include('Unmatched Driver Entries (1):');
+      expect(report).toContain('=== Log Comparison Report ===');
+      expect(report).toContain('Total Sniffer Entries: 3');
+      expect(report).toContain('Total Driver Entries: 3');
+      expect(report).toContain('Matching Entries: 2');
+      expect(report).toContain('Match Rate: 66.7%');
+      expect(report).toContain('Timing Analysis:');
+      expect(report).toContain('Unmatched Sniffer Entries (1):');
+      expect(report).toContain('Unmatched Driver Entries (1):');
     });
 
     it('should handle report with no unmatched entries', () => {
@@ -378,9 +377,9 @@ describe('LogComparator', () => {
       const result = comparator.compareLogs();
       const report = comparator.generateReport(result);
 
-      expect(report).to.include('Match Rate: 100.0%');
-      expect(report).to.not.include('Unmatched Sniffer Entries');
-      expect(report).to.not.include('Unmatched Driver Entries');
+      expect(report).toContain('Match Rate: 100.0%');
+      expect(report).not.toContain('Unmatched Sniffer Entries');
+      expect(report).not.toContain('Unmatched Driver Entries');
     });
 
     it('should handle report with empty log files', () => {
@@ -391,10 +390,10 @@ describe('LogComparator', () => {
       const result = comparator.compareLogs();
       const report = comparator.generateReport(result);
 
-      expect(report).to.include('Total Sniffer Entries: 0');
-      expect(report).to.include('Total Driver Entries: 0');
-      expect(report).to.include('Matching Entries: 0');
-      expect(report).to.include('Match Rate: 0.0%');
+      expect(report).toContain('Total Sniffer Entries: 0');
+      expect(report).toContain('Total Driver Entries: 0');
+      expect(report).toContain('Matching Entries: 0');
+      expect(report).toContain('Match Rate: 0.0%');
     });
   });
 
@@ -412,11 +411,11 @@ describe('LogComparator', () => {
 
       comparator.saveReport(result, reportPath);
 
-      expect(fs.existsSync(reportPath)).to.be.true;
+      expect(fs.existsSync(reportPath)).toBe(true);
 
       const savedReport = fs.readFileSync(reportPath, 'utf8');
-      expect(savedReport).to.include('=== Log Comparison Report ===');
-      expect(savedReport).to.include('Matching Entries: 1');
+      expect(savedReport).toContain('=== Log Comparison Report ===');
+      expect(savedReport).toContain('Matching Entries: 1');
     });
   });
 
@@ -450,14 +449,14 @@ describe('LogComparator', () => {
       const comparator = new LogComparator(snifferLogPath, driverLogPath);
       const result = comparator.compareLogs();
 
-      expect(result.matchingEntries).to.equal(4);
-      expect(result.totalSnifferEntries).to.equal(5);
-      expect(result.totalDriverEntries).to.equal(5);
-      expect(result.unmatchedSnifferEntries).to.have.length(1);
-      expect(result.unmatchedDriverEntries).to.have.length(1);
-      expect(result.unmatchedSnifferEntries[0].data).to.equal('0D 0E 0F');
-      expect(result.unmatchedDriverEntries[0].data).to.equal('10 11 12');
-      expect(result.timingAnalysis.averageTimeDifference).to.be.closeTo(0.001, 0.001);
+      expect(result.matchingEntries).toBe(4);
+      expect(result.totalSnifferEntries).toBe(5);
+      expect(result.totalDriverEntries).toBe(5);
+      expect(result.unmatchedSnifferEntries).toHaveLength(1);
+      expect(result.unmatchedDriverEntries).toHaveLength(1);
+      expect(result.unmatchedSnifferEntries[0].data).toBe('0D 0E 0F');
+      expect(result.unmatchedDriverEntries[0].data).toBe('10 11 12');
+      expect(Math.abs((result.timingAnalysis.averageTimeDifference) - (0.001))).toBeLessThanOrEqual(0.001);
     });
 
     it('should handle logs with mixed timestamp formats', () => {
@@ -479,9 +478,9 @@ describe('LogComparator', () => {
       const comparator = new LogComparator(snifferLogPath, driverLogPath);
       const result = comparator.compareLogs();
 
-      expect(result.matchingEntries).to.equal(3);
-      expect(result.totalSnifferEntries).to.equal(3);
-      expect(result.totalDriverEntries).to.equal(3);
+      expect(result.matchingEntries).toBe(3);
+      expect(result.totalSnifferEntries).toBe(3);
+      expect(result.totalDriverEntries).toBe(3);
     });
   });
 });

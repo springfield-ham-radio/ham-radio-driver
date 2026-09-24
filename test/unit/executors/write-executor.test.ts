@@ -1,5 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
-import { expect } from "chai";
+import { beforeEach, describe, expect, it } from "vitest";
 import { EventEmitter } from "events";
 import type { RadioProtocolStep } from "@springfield/ham-radio-api";
 import { WriteExecutor } from "../../../src/executors/write-executor.js";
@@ -79,10 +78,10 @@ describe("WriteExecutor", () => {
 
     await executor.execute(step, context);
 
-    expect(port.writes).to.have.length(7);
-    expect(Array.from(port.writes[0] ?? [])).to.deep.equal([0x58, 0x00, 0x00, 16, ...Array.from({ length: 16 }, (_, index) => index)]);
-    expect(Array.from(port.writes[1] ?? []).slice(0, 4)).to.deep.equal([0x58, 0x00, 0x20, 16]);
-    expect(Array.from(port.writes[3] ?? []).slice(0, 4)).to.deep.equal([0x58, 0x00, 0x80, 16]);
-    expect(Array.from(port.writes[3] ?? []).slice(4, 6)).to.deep.equal([0x80, 0x81]);
+    expect(port.writes).toHaveLength(7);
+    expect(Array.from(port.writes[0] ?? [])).toEqual([0x58, 0x00, 0x00, 16, ...Array.from({ length: 16 }, (_, index) => index)]);
+    expect(Array.from(port.writes[1] ?? []).slice(0, 4)).toEqual([0x58, 0x00, 0x20, 16]);
+    expect(Array.from(port.writes[3] ?? []).slice(0, 4)).toEqual([0x58, 0x00, 0x80, 16]);
+    expect(Array.from(port.writes[3] ?? []).slice(4, 6)).toEqual([0x80, 0x81]);
   });
 });

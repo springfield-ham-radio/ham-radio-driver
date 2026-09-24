@@ -1,5 +1,4 @@
-import { describe, it, beforeEach, afterEach } from 'node:test';
-import { expect } from 'chai';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import * as fs from 'fs';
 import { SerialPort } from 'serialport';
 import { SerialLogger, createLoggingSerialPort } from '../../../src/utils/serial-logger.js';
@@ -23,20 +22,20 @@ describe('SerialLogger', () => {
     it('should create logger with custom log file', async () => {
       const serialLogger = new SerialLogger(testLogFile);
 
-      expect(serialLogger.getLogFilePath()).to.equal(testLogFile);
+      expect(serialLogger.getLogFilePath()).toBe(testLogFile);
 
       // File should not exist until first log entry
-      expect(fs.existsSync(testLogFile)).to.be.false;
+      expect(fs.existsSync(testLogFile)).toBe(false);
     });
 
     it('should create logger with auto-generated log file', async () => {
       const serialLogger = new SerialLogger();
 
       const logPath = serialLogger.getLogFilePath();
-      expect(logPath).to.match(/^radio-driver-.*\.json$/);
+      expect(logPath).toMatch(/^radio-driver-.*\.json$/);
 
       // File should not exist until first log entry
-      expect(fs.existsSync(logPath)).to.be.false;
+      expect(fs.existsSync(logPath)).toBe(false);
 
       // Clean up the auto-generated log file
       serialLogger.close();
@@ -53,12 +52,12 @@ describe('SerialLogger', () => {
 
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       const logData = JSON.parse(logContent);
-      expect(logData.metadata).to.exist;
-      expect(logData.metadata.startTime).to.exist;
-      expect(logData.metadata.totalEntries).to.equal(1);
-      expect(logData.metadata.version).to.equal('1.0.0');
-      expect(logData.entries).to.be.an('array');
-      expect(logData.entries).to.have.length(1);
+      expect(logData.metadata).toEqual(expect.anything());
+      expect(logData.metadata.startTime).toEqual(expect.anything());
+      expect(logData.metadata.totalEntries).toBe(1);
+      expect(logData.metadata.version).toBe('1.0.0');
+      expect(logData.entries).toBeInstanceOf(Array);
+      expect(logData.entries).toHaveLength(1);
     });
 
             it('should handle file creation errors gracefully', async () => {
@@ -67,11 +66,11 @@ describe('SerialLogger', () => {
 
       // Should not throw an error during construction
       const serialLogger = new SerialLogger(testLogFile);
-      expect(serialLogger).to.be.instanceOf(SerialLogger);
+      expect(serialLogger).toBeInstanceOf(SerialLogger);
 
       // The logger should still work for console logging even if file logging fails
-      expect(() => serialLogger.logSend(new Uint8Array([0x01]))).to.not.throw();
-      expect(() => serialLogger.logReceive(new Uint8Array([0x02]))).to.not.throw();
+      expect(() => serialLogger.logSend(new Uint8Array([0x01]))).not.toThrow();
+      expect(() => serialLogger.logReceive(new Uint8Array([0x02]))).not.toThrow();
 
       // Clean up
       serialLogger.close();
@@ -99,12 +98,12 @@ describe('SerialLogger', () => {
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       const logData = JSON.parse(logContent);
 
-      expect(logData.entries).to.have.length(1);
+      expect(logData.entries).toHaveLength(1);
       const entry = logData.entries[0];
-      expect(entry.direction).to.equal('SEND');
-      expect(entry.data).to.deep.equal([1, 2, 3]);
-      expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
-      expect(entry.elapsedMs).to.be.a('number');
+      expect(entry.direction).toBe('SEND');
+      expect(entry.data).toEqual([1, 2, 3]);
+      expect(entry.timestamp).toMatch(/^\d{3}\.\d{3}$/);
+      expect(entry.elapsedMs).toBeTypeOf('number');
     });
 
         it('should log sent data with description', async () => {
@@ -120,13 +119,13 @@ describe('SerialLogger', () => {
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       const logData = JSON.parse(logContent);
 
-      expect(logData.entries).to.have.length(1);
+      expect(logData.entries).toHaveLength(1);
       const entry = logData.entries[0];
-      expect(entry.direction).to.equal('SEND');
-      expect(entry.data).to.deep.equal([1, 2, 3]);
-      expect(entry.description).to.equal('Test command');
-      expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
-      expect(entry.elapsedMs).to.be.a('number');
+      expect(entry.direction).toBe('SEND');
+      expect(entry.data).toEqual([1, 2, 3]);
+      expect(entry.description).toBe('Test command');
+      expect(entry.timestamp).toMatch(/^\d{3}\.\d{3}$/);
+      expect(entry.elapsedMs).toBeTypeOf('number');
     });
 
         it('should handle empty data', async () => {
@@ -141,12 +140,12 @@ describe('SerialLogger', () => {
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       const logData = JSON.parse(logContent);
 
-      expect(logData.entries).to.have.length(1);
+      expect(logData.entries).toHaveLength(1);
       const entry = logData.entries[0];
-      expect(entry.direction).to.equal('SEND');
-      expect(entry.data).to.deep.equal([]);
-      expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
-      expect(entry.elapsedMs).to.be.a('number');
+      expect(entry.direction).toBe('SEND');
+      expect(entry.data).toEqual([]);
+      expect(entry.timestamp).toMatch(/^\d{3}\.\d{3}$/);
+      expect(entry.elapsedMs).toBeTypeOf('number');
     });
   });
 
@@ -163,12 +162,12 @@ describe('SerialLogger', () => {
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       const logData = JSON.parse(logContent);
 
-      expect(logData.entries).to.have.length(1);
+      expect(logData.entries).toHaveLength(1);
       const entry = logData.entries[0];
-      expect(entry.direction).to.equal('RECV');
-      expect(entry.data).to.deep.equal([4, 5, 6]);
-      expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
-      expect(entry.elapsedMs).to.be.a('number');
+      expect(entry.direction).toBe('RECV');
+      expect(entry.data).toEqual([4, 5, 6]);
+      expect(entry.timestamp).toMatch(/^\d{3}\.\d{3}$/);
+      expect(entry.elapsedMs).toBeTypeOf('number');
     });
 
         it('should log received data with description', async () => {
@@ -184,13 +183,13 @@ describe('SerialLogger', () => {
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       const logData = JSON.parse(logContent);
 
-      expect(logData.entries).to.have.length(1);
+      expect(logData.entries).toHaveLength(1);
       const entry = logData.entries[0];
-      expect(entry.direction).to.equal('RECV');
-      expect(entry.data).to.deep.equal([4, 5, 6]);
-      expect(entry.description).to.equal('Response data');
-      expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
-      expect(entry.elapsedMs).to.be.a('number');
+      expect(entry.direction).toBe('RECV');
+      expect(entry.data).toEqual([4, 5, 6]);
+      expect(entry.description).toBe('Response data');
+      expect(entry.timestamp).toMatch(/^\d{3}\.\d{3}$/);
+      expect(entry.elapsedMs).toBeTypeOf('number');
     });
 
     it('should handle empty received data', async () => {
@@ -205,12 +204,12 @@ describe('SerialLogger', () => {
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       const logData = JSON.parse(logContent);
 
-      expect(logData.entries).to.have.length(1);
+      expect(logData.entries).toHaveLength(1);
       const entry = logData.entries[0];
-      expect(entry.direction).to.equal('RECV');
-      expect(entry.data).to.deep.equal([]);
-      expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
-      expect(entry.elapsedMs).to.be.a('number');
+      expect(entry.direction).toBe('RECV');
+      expect(entry.data).toEqual([]);
+      expect(entry.timestamp).toMatch(/^\d{3}\.\d{3}$/);
+      expect(entry.elapsedMs).toBeTypeOf('number');
     });
   });
 
@@ -223,7 +222,7 @@ describe('SerialLogger', () => {
 
       // Access the private method through the class for testing
       const timestamp = (serialLogger as any).getTimestamp();
-      expect(timestamp).to.match(/^\d{3}\.\d{3}$/);
+      expect(timestamp).toMatch(/^\d{3}\.\d{3}$/);
 
       // Clean up
       serialLogger.close();
@@ -248,10 +247,10 @@ describe('SerialLogger', () => {
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       const logData = JSON.parse(logContent);
 
-      expect(logData.entries).to.have.length(1);
+      expect(logData.entries).toHaveLength(1);
       const entry = logData.entries[0];
-      expect(entry.direction).to.equal('SEND');
-      expect(entry.data).to.deep.equal([1, 2, 3]);
+      expect(entry.direction).toBe('SEND');
+      expect(entry.data).toEqual([1, 2, 3]);
     });
 
     it('should group consecutive receive operations into single entry', async () => {
@@ -268,10 +267,10 @@ describe('SerialLogger', () => {
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       const logData = JSON.parse(logContent);
 
-      expect(logData.entries).to.have.length(1);
+      expect(logData.entries).toHaveLength(1);
       const entry = logData.entries[0];
-      expect(entry.direction).to.equal('RECV');
-      expect(entry.data).to.deep.equal([4, 5, 6]);
+      expect(entry.direction).toBe('RECV');
+      expect(entry.data).toEqual([4, 5, 6]);
     });
 
     it('should create separate entries when direction changes', async () => {
@@ -292,19 +291,19 @@ describe('SerialLogger', () => {
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       const logData = JSON.parse(logContent);
 
-      expect(logData.entries).to.have.length(3);
+      expect(logData.entries).toHaveLength(3);
 
       // First entry: SEND
-      expect(logData.entries[0].direction).to.equal('SEND');
-      expect(logData.entries[0].data).to.deep.equal([1, 2]);
+      expect(logData.entries[0].direction).toBe('SEND');
+      expect(logData.entries[0].data).toEqual([1, 2]);
 
       // Second entry: RECV
-      expect(logData.entries[1].direction).to.equal('RECV');
-      expect(logData.entries[1].data).to.deep.equal([3, 4]);
+      expect(logData.entries[1].direction).toBe('RECV');
+      expect(logData.entries[1].data).toEqual([3, 4]);
 
       // Third entry: SEND
-      expect(logData.entries[2].direction).to.equal('SEND');
-      expect(logData.entries[2].data).to.deep.equal([5, 6]);
+      expect(logData.entries[2].direction).toBe('SEND');
+      expect(logData.entries[2].data).toEqual([5, 6]);
     });
 
     it('should handle mixed single and multiple byte operations', async () => {
@@ -328,15 +327,15 @@ describe('SerialLogger', () => {
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       const logData = JSON.parse(logContent);
 
-      expect(logData.entries).to.have.length(2);
+      expect(logData.entries).toHaveLength(2);
 
       // First entry: All SEND operations grouped
-      expect(logData.entries[0].direction).to.equal('SEND');
-      expect(logData.entries[0].data).to.deep.equal([1, 2, 3]);
+      expect(logData.entries[0].direction).toBe('SEND');
+      expect(logData.entries[0].data).toEqual([1, 2, 3]);
 
       // Second entry: All RECV operations grouped
-      expect(logData.entries[1].direction).to.equal('RECV');
-      expect(logData.entries[1].data).to.deep.equal([4, 5, 6]);
+      expect(logData.entries[1].direction).toBe('RECV');
+      expect(logData.entries[1].data).toEqual([4, 5, 6]);
     });
 
     it('should flush buffer on close even if no direction change', async () => {
@@ -351,9 +350,9 @@ describe('SerialLogger', () => {
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       const logData = JSON.parse(logContent);
 
-      expect(logData.entries).to.have.length(1);
-      expect(logData.entries[0].direction).to.equal('SEND');
-      expect(logData.entries[0].data).to.deep.equal([1, 2]);
+      expect(logData.entries).toHaveLength(1);
+      expect(logData.entries[0].direction).toBe('SEND');
+      expect(logData.entries[0].data).toEqual([1, 2]);
     });
   });
 
@@ -372,8 +371,8 @@ describe('SerialLogger', () => {
 
       const logContent = fs.readFileSync(testLogFile, 'utf8');
       const logData = JSON.parse(logContent);
-      expect(logData.metadata.endTime).to.exist;
-      expect(logData.metadata.totalEntries).to.equal(1);
+      expect(logData.metadata.endTime).toEqual(expect.anything());
+      expect(logData.metadata.totalEntries).toBe(1);
     });
 
     it('should handle close when no log stream exists', async () => {
@@ -383,7 +382,7 @@ describe('SerialLogger', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       // Should not throw an error
-      expect(() => serialLogger.close()).to.not.throw();
+      expect(() => serialLogger.close()).not.toThrow();
 
       // Wait for cleanup to complete
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -394,7 +393,7 @@ describe('SerialLogger', () => {
                 it('should return the log file path', async () => {
       const serialLogger = new SerialLogger(testLogFile);
 
-      expect(serialLogger.getLogFilePath()).to.equal(testLogFile);
+      expect(serialLogger.getLogFilePath()).toBe(testLogFile);
 
       // Clean up
       serialLogger.close();
@@ -410,24 +409,24 @@ describe('SerialLogger', () => {
         const data = [0x01, 0x02, 0x03, 0xFF];
         const result = SerialLogger.dataToUint8Array(data);
 
-        expect(result).to.be.instanceOf(Uint8Array);
-        expect(Array.from(result)).to.deep.equal([1, 2, 3, 255]);
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(Array.from(result)).toEqual([1, 2, 3, 255]);
       });
 
       it('should handle empty array', () => {
         const data: number[] = [];
         const result = SerialLogger.dataToUint8Array(data);
 
-        expect(result).to.be.instanceOf(Uint8Array);
-        expect(result.length).to.equal(0);
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(result.length).toBe(0);
       });
 
       it('should handle single byte', () => {
         const data = [0xAA];
         const result = SerialLogger.dataToUint8Array(data);
 
-        expect(result).to.be.instanceOf(Uint8Array);
-        expect(Array.from(result)).to.deep.equal([170]);
+        expect(result).toBeInstanceOf(Uint8Array);
+        expect(Array.from(result)).toEqual([170]);
       });
     });
 
@@ -436,28 +435,28 @@ describe('SerialLogger', () => {
         const data = [0x01, 0x02, 0x03, 0xFF];
         const result = SerialLogger.dataToHexString(data);
 
-        expect(result).to.equal('0102 03ff');
+        expect(result).toBe('0102 03ff');
       });
 
       it('should handle empty array', () => {
         const data: number[] = [];
         const result = SerialLogger.dataToHexString(data);
 
-        expect(result).to.equal('');
+        expect(result).toBe('');
       });
 
       it('should handle single byte', () => {
         const data = [0xAA];
         const result = SerialLogger.dataToHexString(data);
 
-        expect(result).to.equal('aa');
+        expect(result).toBe('aa');
       });
 
       it('should handle bytes with leading zeros', () => {
         const data = [0x00, 0x0A, 0x0F];
         const result = SerialLogger.dataToHexString(data);
 
-        expect(result).to.equal('000a 0f');
+        expect(result).toBe('000a 0f');
       });
     });
   });
@@ -498,7 +497,7 @@ describe('createLoggingSerialPort', () => {
       const serialLogger = new SerialLogger(testLogFile);
       const loggingPort = createLoggingSerialPort(mockPort as SerialPort, serialLogger);
 
-      expect(loggingPort).to.equal(mockPort);
+      expect(loggingPort).toBe(mockPort);
 
       // Clean up
       serialLogger.close();
@@ -520,12 +519,12 @@ describe('createLoggingSerialPort', () => {
     const logContent = fs.readFileSync(testLogFile, 'utf8');
     const logData = JSON.parse(logContent);
 
-    expect(logData.entries).to.have.length(1);
+    expect(logData.entries).toHaveLength(1);
     const entry = logData.entries[0];
-    expect(entry.direction).to.equal('SEND');
-    expect(entry.data).to.deep.equal([1, 2, 3]);
-    expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
-    expect(entry.elapsedMs).to.be.a('number');
+    expect(entry.direction).toBe('SEND');
+    expect(entry.data).toEqual([1, 2, 3]);
+    expect(entry.timestamp).toMatch(/^\d{3}\.\d{3}$/);
+    expect(entry.elapsedMs).toBeTypeOf('number');
   });
 
       it('should log Buffer data sent through write method', async () => {
@@ -541,12 +540,12 @@ describe('createLoggingSerialPort', () => {
     const logContent = fs.readFileSync(testLogFile, 'utf8');
     const logData = JSON.parse(logContent);
 
-    expect(logData.entries).to.have.length(1);
+    expect(logData.entries).toHaveLength(1);
     const entry = logData.entries[0];
-    expect(entry.direction).to.equal('SEND');
-    expect(entry.data).to.deep.equal([1, 2, 3]);
-    expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
-    expect(entry.elapsedMs).to.be.a('number');
+    expect(entry.direction).toBe('SEND');
+    expect(entry.data).toEqual([1, 2, 3]);
+    expect(entry.timestamp).toMatch(/^\d{3}\.\d{3}$/);
+    expect(entry.elapsedMs).toBeTypeOf('number');
   });
 
     it('should log string data sent through write method', async () => {
@@ -562,12 +561,12 @@ describe('createLoggingSerialPort', () => {
     const logContent = fs.readFileSync(testLogFile, 'utf8');
     const logData = JSON.parse(logContent);
 
-    expect(logData.entries).to.have.length(1);
+    expect(logData.entries).toHaveLength(1);
     const entry = logData.entries[0];
-    expect(entry.direction).to.equal('SEND');
-    expect(entry.data).to.deep.equal([72, 101, 108, 108, 111]); // 'Hello' as byte values
-    expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
-    expect(entry.elapsedMs).to.be.a('number');
+    expect(entry.direction).toBe('SEND');
+    expect(entry.data).toEqual([72, 101, 108, 108, 111]); // 'Hello' as byte values
+    expect(entry.timestamp).toMatch(/^\d{3}\.\d{3}$/);
+    expect(entry.elapsedMs).toBeTypeOf('number');
   });
 
     it('should log array data sent through write method', async () => {
@@ -583,12 +582,12 @@ describe('createLoggingSerialPort', () => {
     const logContent = fs.readFileSync(testLogFile, 'utf8');
     const logData = JSON.parse(logContent);
 
-    expect(logData.entries).to.have.length(1);
+    expect(logData.entries).toHaveLength(1);
     const entry = logData.entries[0];
-    expect(entry.direction).to.equal('SEND');
-    expect(entry.data).to.deep.equal([1, 2, 3]);
-    expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
-    expect(entry.elapsedMs).to.be.a('number');
+    expect(entry.direction).toBe('SEND');
+    expect(entry.data).toEqual([1, 2, 3]);
+    expect(entry.timestamp).toMatch(/^\d{3}\.\d{3}$/);
+    expect(entry.elapsedMs).toBeTypeOf('number');
   });
 
   it('should handle write method with callback', async () => {
@@ -599,11 +598,11 @@ describe('createLoggingSerialPort', () => {
 
     const result = loggingPort.write(testData, (error) => {
       callbackCalled = true;
-      expect(error).to.be.null;
+      expect(error).toBeNull();
     });
 
-    expect(result).to.be.true;
-    expect(callbackCalled).to.be.true;
+    expect(result).toBe(true);
+    expect(callbackCalled).toBe(true);
 
     // Clean up
     serialLogger.close();
@@ -620,11 +619,11 @@ describe('createLoggingSerialPort', () => {
 
     const result = loggingPort.write(testData, 'utf8', (error) => {
       callbackCalled = true;
-      expect(error).to.be.null;
+      expect(error).toBeNull();
     });
 
-    expect(result).to.be.true;
-    expect(callbackCalled).to.be.true;
+    expect(result).toBe(true);
+    expect(callbackCalled).toBe(true);
 
     // Clean up
     serialLogger.close();
@@ -647,12 +646,12 @@ describe('createLoggingSerialPort', () => {
     const logContent = fs.readFileSync(testLogFile, 'utf8');
     const logData = JSON.parse(logContent);
 
-    expect(logData.entries).to.have.length(1);
+    expect(logData.entries).toHaveLength(1);
     const entry = logData.entries[0];
-    expect(entry.direction).to.equal('RECV');
-    expect(entry.data).to.deep.equal([4, 5, 6]);
-    expect(entry.timestamp).to.match(/^\d{3}\.\d{3}$/);
-    expect(entry.elapsedMs).to.be.a('number');
+    expect(entry.direction).toBe('RECV');
+    expect(entry.data).toEqual([4, 5, 6]);
+    expect(entry.timestamp).toMatch(/^\d{3}\.\d{3}$/);
+    expect(entry.elapsedMs).toBeTypeOf('number');
   });
 
   it('should preserve original write method functionality', async () => {
@@ -662,7 +661,7 @@ describe('createLoggingSerialPort', () => {
 
     // The mock write method returns true
     const result = loggingPort.write(testData);
-    expect(result).to.be.true;
+    expect(result).toBe(true);
 
     // Clean up
     serialLogger.close();

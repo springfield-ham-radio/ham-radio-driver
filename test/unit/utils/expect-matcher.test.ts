@@ -1,5 +1,4 @@
-import { describe, it, beforeEach } from "node:test";
-import { expect } from "chai";
+import { beforeEach, describe, expect, it } from "vitest";
 import { extractExpectData, getExpectedLength, matchExpect } from "@src/utils/expect-matcher.js";
 import type { ProtocolContext } from "@src/protocol-context.js";
 import { ProtocolContextFactory } from "./test-factories.js";
@@ -12,22 +11,22 @@ describe("expect-matcher", () => {
   });
 
   it("matches an exact ACK byte", () => {
-    expect(matchExpect(Buffer.from([0x06]), "0x06", context)).to.be.true;
-    expect(matchExpect(Buffer.from([0x06]), 6, context)).to.be.true;
-    expect(matchExpect(Buffer.from([0x07]), "0x06", context)).to.be.false;
-    expect(getExpectedLength("0x06", context)).to.equal(1);
+    expect(matchExpect(Buffer.from([0x06]), "0x06", context)).toBe(true);
+    expect(matchExpect(Buffer.from([0x06]), 6, context)).toBe(true);
+    expect(matchExpect(Buffer.from([0x07]), "0x06", context)).toBe(false);
+    expect(getExpectedLength("0x06", context)).toBe(1);
   });
 
   it("treats until expects as variable-length payloads", () => {
-    expect(matchExpect(Buffer.from("ID TH-F6A"), { until: "0x0D" }, context)).to.be.true;
-    expect(() => getExpectedLength({ until: "0x0D" }, context)).to.throw(/fixed length/);
-    expect(extractExpectData(new Uint8Array([0x49, 0x44]), { until: "0x0D" }, context)).to.deep.equal(new Uint8Array([0x49, 0x44]));
+    expect(matchExpect(Buffer.from("ID TH-F6A"), { until: "0x0D" }, context)).toBe(true);
+    expect(() => getExpectedLength({ until: "0x0D" }, context)).toThrow(/fixed length/);
+    expect(extractExpectData(new Uint8Array([0x49, 0x44]), { until: "0x0D" }, context)).toEqual(new Uint8Array([0x49, 0x44]));
   });
 
   it("matches opaque byte counts", () => {
-    expect(matchExpect(Buffer.from([1, 2, 3, 4, 5, 6, 7, 8]), { bytes: 8 }, context)).to.be.true;
-    expect(matchExpect(Buffer.from([1, 2, 3]), { bytes: 8 }, context)).to.be.false;
-    expect(getExpectedLength({ bytes: 8 }, context)).to.equal(8);
+    expect(matchExpect(Buffer.from([1, 2, 3, 4, 5, 6, 7, 8]), { bytes: 8 }, context)).toBe(true);
+    expect(matchExpect(Buffer.from([1, 2, 3]), { bytes: 8 }, context)).toBe(false);
+    expect(getExpectedLength({ bytes: 8 }, context)).toBe(8);
   });
 
   it("matches a framed read response and extracts $data", () => {
@@ -35,9 +34,9 @@ describe("expect-matcher", () => {
     const payload = Buffer.alloc(64, 0xab);
     const frame = Buffer.concat([Buffer.from([0x58, 0x10, 0x00, 64]), payload]);
 
-    expect(getExpectedLength(expectPattern, context)).to.equal(4 + 64);
-    expect(matchExpect(frame, expectPattern, context)).to.be.true;
-    expect(extractExpectData(new Uint8Array(frame), expectPattern, context)).to.deep.equal(new Uint8Array(payload));
+    expect(getExpectedLength(expectPattern, context)).toBe(4 + 64);
+    expect(matchExpect(frame, expectPattern, context)).toBe(true);
+    expect(extractExpectData(new Uint8Array(frame), expectPattern, context)).toEqual(new Uint8Array(payload));
   });
 
   it("matches a Kenwood clone framed read with $block", () => {
@@ -57,8 +56,8 @@ describe("expect-matcher", () => {
     const payload = Buffer.alloc(256, 0xab);
     const frame = Buffer.concat([Buffer.from([0x57, 0x00, 0x02, 0x00, 0x00]), payload]);
 
-    expect(getExpectedLength(expectPattern, context)).to.equal(5 + 256);
-    expect(matchExpect(frame, expectPattern, context)).to.be.true;
-    expect(extractExpectData(new Uint8Array(frame), expectPattern, context)).to.deep.equal(new Uint8Array(payload));
+    expect(getExpectedLength(expectPattern, context)).toBe(5 + 256);
+    expect(matchExpect(frame, expectPattern, context)).toBe(true);
+    expect(extractExpectData(new Uint8Array(frame), expectPattern, context)).toEqual(new Uint8Array(payload));
   });
 });

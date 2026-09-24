@@ -1,5 +1,4 @@
-import { describe, it } from 'node:test';
-import { expect } from 'chai';
+import { describe, expect, it } from 'vitest';
 import type { RadioProgressIndicator, Radio } from '@springfield/ham-radio-api';
 import { RadioDriver, CancelledException } from '../../src/index.js';
 import { RadioModelId } from '@springfield/ham-radio-api';
@@ -53,9 +52,9 @@ describe('RadioDriver', () => {
 
   const progressIndicator: RadioProgressIndicator = {
     setValue: (value: number) => {
-      expect(value).to.be.a('number');
-      expect(value).to.be.at.least(0);
-      expect(value).to.be.at.most(1);
+      expect(value).toBeTypeOf('number');
+      expect(value).toBeGreaterThanOrEqual(0);
+      expect(value).toBeLessThanOrEqual(1);
     },
     isCanceled: false,
   };
@@ -63,9 +62,9 @@ describe('RadioDriver', () => {
   describe('readRadio()', () => {
     it('should require progress indicator parameter', async () => {
       const driver = new RadioDriver(mockRadio, mockLogger);
-      expect(driver.readRadio).to.be.a('function');
+      expect(driver.readRadio).toBeTypeOf('function');
       const method = driver.readRadio.bind(driver);
-      expect(method.length).to.equal(2); // serialPortPath, progressIndicator
+      expect(method.length).toBe(2); // serialPortPath, progressIndicator
       // Should not throw when called with progressIndicator (connection will fail, but that's fine for this test)
       try {
         await driver.readRadio('dummy', progressIndicator);
@@ -78,9 +77,9 @@ describe('RadioDriver', () => {
   describe('writeRadio()', () => {
     it('should require progress indicator parameter', async () => {
       const driver = new RadioDriver(mockRadio, mockLogger);
-      expect(driver.writeRadio).to.be.a('function');
+      expect(driver.writeRadio).toBeTypeOf('function');
       const method = driver.writeRadio.bind(driver);
-      expect(method.length).to.equal(3); // serialPortPath, data, progressIndicator
+      expect(method.length).toBe(3); // serialPortPath, data, progressIndicator
       const testData = new Uint8Array([1, 2, 3, 4]);
       // Should not throw when called with progressIndicator (connection will fail, but that's fine for this test)
       try {
@@ -93,17 +92,17 @@ describe('RadioDriver', () => {
 
   describe('CancelledException', () => {
     it('should be properly exported and instantiable', () => {
-      expect(CancelledException).to.be.a('function');
+      expect(CancelledException).toBeTypeOf('function');
       const exception = new CancelledException('Test cancellation');
-      expect(exception).to.be.instanceOf(Error);
-      expect(exception).to.be.instanceOf(CancelledException);
-      expect(exception.name).to.equal('CancelledException');
-      expect(exception.message).to.equal('Test cancellation');
+      expect(exception).toBeInstanceOf(Error);
+      expect(exception).toBeInstanceOf(CancelledException);
+      expect(exception.name).toBe('CancelledException');
+      expect(exception.message).toBe('Test cancellation');
     });
 
     it('should have a default message when none provided', () => {
       const exception = new CancelledException();
-      expect(exception.message).to.equal('Operation was cancelled');
+      expect(exception.message).toBe('Operation was cancelled');
     });
   });
 });

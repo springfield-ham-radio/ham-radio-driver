@@ -1,21 +1,17 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env node
 
 /**
  * Example demonstrating the logging utilities from ham-radio-driver
  */
 
-import { SerialLogger, LogComparator } from '../src/utils/index.js';
-import { createLogger } from 'loglayer';
+import { SerialLogger, LogComparator } from '../dist/utils/index.js';
 
 async function main(): Promise<void> {
   console.log('=== Ham Radio Driver Logging Example ===\n');
 
-  // Create a logger
-  const logger = createLogger();
-
   // Example 1: Serial Logger
   console.log('1. Creating Serial Logger...');
-  const serialLogger = new SerialLogger(logger, 'example-driver.log');
+  const serialLogger = new SerialLogger('example-driver.log');
 
   // Simulate some serial communication
   serialLogger.logSend(new Uint8Array([0x50, 0xbb, 0xff]), 'Magic number');

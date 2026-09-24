@@ -1,5 +1,4 @@
-import { describe, it, beforeEach } from 'node:test';
-import { expect } from 'chai';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { RadioProgressIndicator, Radio } from '@springfield/ham-radio-api';
 import { RadioDriver } from '../../src/index.js';
 import { RadioModelId } from '@springfield/ham-radio-api';
@@ -333,8 +332,8 @@ describe('RadioDriver Integration Tests', () => {
 
       const memoryData = await driver.readRadio(serialPortPath, progressIndicator);
 
-      expect(memoryData).to.be.instanceOf(Uint8Array);
-      expect(memoryData.length).to.be.greaterThan(0);
+      expect(memoryData).toBeInstanceOf(Uint8Array);
+      expect(memoryData.length).toBeGreaterThan(0);
     });
 
     it('should handle cancellation during read operation', async () => {
@@ -351,7 +350,7 @@ describe('RadioDriver Integration Tests', () => {
         await driver.readRadio(serialPortPath, progressIndicator);
         expect.fail('Should have thrown CancelledException');
       } catch (error: any) {
-        expect(error.constructor.name).to.equal('CancelledException');
+        expect(error.constructor.name).toBe('CancelledException');
       }
     });
   });
@@ -372,12 +371,12 @@ describe('RadioDriver Integration Tests', () => {
   describe('RadioDriver utility methods', () => {
     it('should return correct number of memory segments', () => {
       const driver = new RadioDriver(baofengUV5RRadio, mockLogger);
-      expect(driver.getNumberMemorySegments()).to.equal(2);
+      expect(driver.getNumberMemorySegments()).toBe(2);
     });
 
     it('should return correct radio model', () => {
       const driver = new RadioDriver(baofengUV5RRadio, mockLogger);
-      expect(driver.getRadioModel()).to.equal('baofeng-uv5r');
+      expect(driver.getRadioModel()).toBe('baofeng-uv5r');
     });
   });
 });

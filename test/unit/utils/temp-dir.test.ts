@@ -1,5 +1,4 @@
-import { describe, it, afterEach } from 'node:test';
-import { expect } from 'chai';
+import { afterEach, describe, expect, it } from 'vitest';
 import * as fs from 'fs';
 import { TempDir } from '../../utils/temp-dir.js';
 
@@ -17,24 +16,24 @@ describe('TempDir', () => {
       tempDir = new TempDir();
       const path = tempDir.create('test-prefix');
 
-      expect(path).to.be.a('string');
-      expect(path).to.include('test-prefix');
-      expect(fs.existsSync(path)).to.be.true;
-      expect(fs.statSync(path).isDirectory()).to.be.true;
+      expect(path).toBeTypeOf('string');
+      expect(path).toContain('test-prefix');
+      expect(fs.existsSync(path)).toBe(true);
+      expect(fs.statSync(path).isDirectory()).toBe(true);
     });
 
     it('should throw error if create is called twice', () => {
       tempDir = new TempDir();
       tempDir.create('test-prefix');
 
-      expect(() => tempDir.create('another-prefix')).to.throw('TempDir already has a directory created');
+      expect(() => tempDir.create('another-prefix')).toThrow('TempDir already has a directory created');
     });
 
     it('should handle directory creation errors gracefully', () => {
       tempDir = new TempDir();
 
       // This should not throw an error even if there are permission issues
-      expect(() => tempDir.create('test-prefix')).to.not.throw();
+      expect(() => tempDir.create('test-prefix')).not.toThrow();
     });
   });
 
@@ -44,12 +43,12 @@ describe('TempDir', () => {
       const createdPath = tempDir.create('test-prefix');
       const retrievedPath = tempDir.getPath();
 
-      expect(retrievedPath).to.equal(createdPath);
+      expect(retrievedPath).toBe(createdPath);
     });
 
     it('should throw error if called before creation', () => {
       tempDir = new TempDir();
-      expect(() => tempDir.getPath()).to.throw('No temporary directory has been created');
+      expect(() => tempDir.getPath()).toThrow('No temporary directory has been created');
     });
   });
 
@@ -59,13 +58,13 @@ describe('TempDir', () => {
       tempDir.create('test-prefix');
       const filePath = tempDir.getFilePath('test.log');
 
-      expect(filePath).to.include('test.log');
-      expect(filePath).to.include(tempDir.getPath());
+      expect(filePath).toContain('test.log');
+      expect(filePath).toContain(tempDir.getPath());
     });
 
     it('should throw error if called before creation', () => {
       tempDir = new TempDir();
-      expect(() => tempDir.getFilePath('test.log')).to.throw('No temporary directory has been created');
+      expect(() => tempDir.getFilePath('test.log')).toThrow('No temporary directory has been created');
     });
   });
 
@@ -74,7 +73,7 @@ describe('TempDir', () => {
       tempDir = new TempDir();
       tempDir.create('test-prefix');
 
-      expect(() => tempDir.ensureExists()).to.not.throw();
+      expect(() => tempDir.ensureExists()).not.toThrow();
     });
 
     it('should throw if directory does not exist', () => {
@@ -85,7 +84,7 @@ describe('TempDir', () => {
       const path = tempDir.getPath();
       fs.rmSync(path, { recursive: true, force: true });
 
-      expect(() => tempDir.ensureExists()).to.throw('Temporary directory does not exist');
+      expect(() => tempDir.ensureExists()).toThrow('Temporary directory does not exist');
     });
   });
 
@@ -98,21 +97,21 @@ describe('TempDir', () => {
       const testFile = tempDir.getFilePath('test.txt');
       fs.writeFileSync(testFile, 'test content');
 
-      expect(fs.existsSync(path)).to.be.true;
-      expect(fs.existsSync(testFile)).to.be.true;
+      expect(fs.existsSync(path)).toBe(true);
+      expect(fs.existsSync(testFile)).toBe(true);
 
       tempDir.cleanup();
 
-      expect(fs.existsSync(path)).to.be.false;
-      expect(fs.existsSync(testFile)).to.be.false;
+      expect(fs.existsSync(path)).toBe(false);
+      expect(fs.existsSync(testFile)).toBe(false);
     });
 
     it('should be safe to call multiple times', () => {
       tempDir = new TempDir();
       tempDir.create('test-prefix');
 
-      expect(() => tempDir.cleanup()).to.not.throw();
-      expect(() => tempDir.cleanup()).to.not.throw();
+      expect(() => tempDir.cleanup()).not.toThrow();
+      expect(() => tempDir.cleanup()).not.toThrow();
     });
 
     it('should handle cleanup when directory already removed', () => {
@@ -122,7 +121,7 @@ describe('TempDir', () => {
       // Manually remove the directory
       fs.rmSync(path, { recursive: true, force: true });
 
-      expect(() => tempDir.cleanup()).to.not.throw();
+      expect(() => tempDir.cleanup()).not.toThrow();
     });
   });
 
@@ -130,14 +129,14 @@ describe('TempDir', () => {
     it('should create directory and return path with cleanup function', () => {
       const { path: dirPath, cleanup } = TempDir.createWithCleanup('test-prefix');
 
-      expect(dirPath).to.be.a('string');
-      expect(dirPath).to.include('test-prefix');
-      expect(fs.existsSync(dirPath)).to.be.true;
-      expect(cleanup).to.be.a('function');
+      expect(dirPath).toBeTypeOf('string');
+      expect(dirPath).toContain('test-prefix');
+      expect(fs.existsSync(dirPath)).toBe(true);
+      expect(cleanup).toBeTypeOf('function');
 
       cleanup();
 
-      expect(fs.existsSync(dirPath)).to.be.false;
+      expect(fs.existsSync(dirPath)).toBe(false);
     });
   });
 
@@ -146,8 +145,8 @@ describe('TempDir', () => {
       const tempDirInstance = new TempDir();
       tempDirInstance.create('test-prefix');
 
-      expect(tempDirInstance).to.be.instanceOf(TempDir);
-      expect(tempDirInstance.getPath()).to.include('test-prefix');
+      expect(tempDirInstance).toBeInstanceOf(TempDir);
+      expect(tempDirInstance.getPath()).toContain('test-prefix');
 
       tempDirInstance.cleanup();
     });
@@ -163,15 +162,15 @@ describe('TempDir', () => {
 
       // Write file
       fs.writeFileSync(testFile, testContent);
-      expect(fs.existsSync(testFile)).to.be.true;
+      expect(fs.existsSync(testFile)).toBe(true);
 
       // Read file
       const readContent = fs.readFileSync(testFile, 'utf8');
-      expect(readContent).to.equal(testContent);
+      expect(readContent).toBe(testContent);
 
       // Cleanup should remove everything
       tempDir.cleanup();
-      expect(fs.existsSync(testFile)).to.be.false;
+      expect(fs.existsSync(testFile)).toBe(false);
     });
 
     it('should handle multiple files in the same directory', () => {
@@ -184,13 +183,13 @@ describe('TempDir', () => {
       fs.writeFileSync(file1, 'content1');
       fs.writeFileSync(file2, 'content2');
 
-      expect(fs.existsSync(file1)).to.be.true;
-      expect(fs.existsSync(file2)).to.be.true;
+      expect(fs.existsSync(file1)).toBe(true);
+      expect(fs.existsSync(file2)).toBe(true);
 
       tempDir.cleanup();
 
-      expect(fs.existsSync(file1)).to.be.false;
-      expect(fs.existsSync(file2)).to.be.false;
+      expect(fs.existsSync(file1)).toBe(false);
+      expect(fs.existsSync(file2)).toBe(false);
     });
   });
 });

@@ -1,5 +1,4 @@
-import { describe, it } from "node:test";
-import { expect } from "chai";
+import { describe, expect, it } from "vitest";
 import { EventEmitter } from "events";
 import { CatReadExecutor } from "../../../src/executors/cat-read-executor.js";
 import { ProtocolContextFactory } from "../utils/test-factories.js";
@@ -64,11 +63,11 @@ describe("CatReadExecutor", () => {
       context,
     );
 
-    expect(port.writes[0]).to.equal("MR 0,000\r");
-    expect(port.writes).to.include("MNA 000\r");
-    expect(port.writes).to.include("MR 0,001\r");
-    expect(memoryBuffer[0]).to.not.equal(255);
-    expect(memoryBuffer[24]).to.equal("C".charCodeAt(0));
-    expect(memoryBuffer[32]).to.equal(255);
+    expect(port.writes[0]).toBe("MR 0,000\r");
+    expect(port.writes).toContain("MNA 000\r");
+    expect(port.writes).toContain("MR 0,001\r");
+    expect(memoryBuffer[0]).not.toBe(255);
+    expect(memoryBuffer[24]).toBe("C".charCodeAt(0));
+    expect(memoryBuffer[32]).toBe(255);
   });
 });
