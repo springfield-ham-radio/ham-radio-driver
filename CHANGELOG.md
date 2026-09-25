@@ -1,3 +1,13 @@
+## [3.5.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.4.2...v3.5.0) (2026-09-25)
+
+### Features
+
+* prefix the next read block when a chunk ack times out ([bf0376f](https://github.com/springfield-ham-radio/ham-radio-driver/commit/bf0376f2d125f70c68bdcbb73c4882a2e9daea2b))
+
+### Bug Fixes
+
+* update @springfield/ham-radio-api to 17.12.0 and @springfield/ham-radio-utils to 4.15.0 ([d3f9012](https://github.com/springfield-ham-radio/ham-radio-driver/commit/d3f9012154e979193e6131f0b385ffa05ff2d2b3))
+
 ## [3.4.2](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.4.1...v3.4.2) (2026-09-24)
 
 ### Bug Fixes
