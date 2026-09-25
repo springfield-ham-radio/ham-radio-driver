@@ -2,11 +2,25 @@ import type { ProtocolContext } from "../protocol-context.js";
 import type { RadioByteToken, RadioExpect, RadioExchange, RadioMemorySegment, RadioProtocolStep } from "@springfield/ham-radio-api";
 import { CancelledException } from "../cancelled-exception.js";
 import { executeExchange, extractDataFromResponse } from "../utils/step-utils.js";
-import { inclusiveSegmentSize } from "../utils/token-utils.js";
+import { inclusiveSegmentSize, isExpectBytes, isExpectUntil } from "../utils/token-utils.js";
 import { isReadStep } from "../utils/step-guards.js";
 import { advanceProgress } from "../utils/progress-utils.js";
 import { readLoopOptions, wait } from "../utils/write-chunks.js";
 import { StepExecutor } from "./base.js";
+
+interface ReadResume {
+  prefixNext: boolean;
+}
+
+const isAckTimeout = (error: unknown): boolean => error instanceof Error && error.message.startsWith("Timeout waiting for response");
+
+const withReadyPrefix = (ready: RadioByteToken, expect: RadioExpect): RadioExpect => {
+  if (isExpectBytes(expect) || isExpectUntil(expect)) {
+    throw new Error("read.ready requires an expect token or token array");
+  }
+
+  return Array.isArray(expect) ? [ready, ...expect] : [ready, expect];
+};
 
 export class ReadExecutor implements StepExecutor {
   canExecute(step: RadioProtocolStep): boolean {
@@ -19,7 +33,8 @@ export class ReadExecutor implements StepExecutor {
     }
 
     const { ack, expect, segments: segmentNames, send, timeout } = step.read;
-    const { delay } = readLoopOptions(step.read);
+    const { delay, ready } = readLoopOptions(step.read);
+    const readResume: ReadResume = { prefixNext: false };
 
     if (step.description) {
       context.logger.debug(step.description);
@@ -63,6 +78,8 @@ export class ReadExecutor implements StepExecutor {
         context,
         delay: delay ?? 0,
         expect,
+        readResume,
+        ready,
         segmentConfig,
         send,
         timeout,
@@ -83,6 +100,8 @@ export class ReadExecutor implements StepExecutor {
     context: ProtocolContext;
     delay: number;
     expect: RadioExpect;
+    readResume: ReadResume;
+    ready?: RadioByteToken;
     segmentConfig: RadioMemorySegment;
     send: RadioByteToken[];
     timeout?: number;
@@ -111,10 +130,13 @@ export class ReadExecutor implements StepExecutor {
       params.context.currentSegment!.currentAddress = address;
       params.context.variables.set("chunkLength", thisChunk);
 
-      await executeExchange({ expect: params.expect, send: params.send, timeout: params.timeout }, params.context);
+      const frameExpect = params.readResume.prefixNext && params.ready !== undefined ? withReadyPrefix(params.ready, params.expect) : params.expect;
+      params.readResume.prefixNext = false;
+
+      await executeExchange({ expect: frameExpect, send: params.send, timeout: params.timeout }, params.context);
       const startSent = params.context.variables.get("lastSentData");
       const startReceived = params.context.variables.get("lastReceivedData");
-      const chunkData = extractDataFromResponse(startReceived, params.expect, params.context);
+      const chunkData = extractDataFromResponse(startReceived, frameExpect, params.context);
 
       if (offset + chunkData.length > data.length) {
         throw new RangeError(
@@ -127,9 +149,21 @@ export class ReadExecutor implements StepExecutor {
       let endSent: number[] | undefined;
       let endReceived: number[] | undefined;
       if (params.ack) {
-        await executeExchange(params.ack, params.context);
-        endSent = params.context.variables.get("lastSentData");
-        endReceived = params.context.variables.get("lastReceivedData");
+        const ackExpectsReply = params.ack.expect !== undefined;
+
+        try {
+          await executeExchange(params.ack, params.context);
+          endSent = params.context.variables.get("lastSentData");
+          endReceived = params.context.variables.get("lastReceivedData");
+          params.readResume.prefixNext = !ackExpectsReply && params.ready !== undefined;
+        } catch (error) {
+          if (ackExpectsReply && params.ready !== undefined && isAckTimeout(error)) {
+            endSent = params.context.variables.get("lastSentData");
+            params.readResume.prefixNext = true;
+          } else {
+            throw error;
+          }
+        }
       }
 
       await wait(params.delay);

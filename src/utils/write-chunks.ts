@@ -1,8 +1,9 @@
-import type { RadioMemoryConfig, RadioMemorySegment, RadioReadStep, RadioWriteStep } from "@springfield/ham-radio-api";
+import type { RadioByteToken, RadioMemoryConfig, RadioMemorySegment, RadioReadStep, RadioWriteStep } from "@springfield/ham-radio-api";
 import { inclusiveSegmentSize } from "./token-utils.js";
 
 export interface ReadChunkOptions {
   delay?: number;
+  ready?: RadioByteToken;
 }
 
 export interface WriteChunkOptions {
