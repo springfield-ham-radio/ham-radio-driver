@@ -16,3 +16,7 @@ import { RadioDriver } from '@springfield/ham-radio-driver';
 const driver = new RadioDriver(radioConfig, logger);
 const memory = await driver.readRadio('/dev/ttyUSB0', progressIndicator);
 ```
+
+## License
+
+MIT. Copyright (c) 2026 Bryan Hunt. See [LICENSE](LICENSE).
