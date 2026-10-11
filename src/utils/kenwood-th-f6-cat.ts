@@ -96,8 +96,8 @@ export const kenwoodMemoryWriteCommand = (index: number, spec?: KenwoodThF6Memor
 };
 
 export const kenwoodNameWriteCommand = (index: number, name: string): number[] => {
-  const padded = name.replace(/\0/g, " ").slice(0, NAME_LENGTH).padEnd(NAME_LENGTH, " ");
-  return asciiCommand(`MNA ${padIndex(index)},${padded}`);
+  const trimmed = name.replace(/\0/g, " ").trimEnd().slice(0, NAME_LENGTH);
+  return asciiCommand(`MNA ${padIndex(index)},${trimmed}`);
 };
 
 export const kenwoodSplitWriteCommand = (index: number, transmitFrequency: number): number[] =>

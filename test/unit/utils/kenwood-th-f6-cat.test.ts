@@ -5,6 +5,7 @@ import {
   kenwoodMemoryReadCommand,
   kenwoodMemoryWriteCommand,
   kenwoodNameReadCommand,
+  kenwoodNameWriteCommand,
   packKenwoodThF6Record,
   parseKenwoodMemoryReadLine,
   parseKenwoodNameLine,
@@ -63,5 +64,17 @@ describe("kenwood-th-f6-cat", () => {
     const empty = emptyKenwoodThF6Record();
     expect(empty).toHaveLength(32);
     expect([...empty].every((byte) => byte === 255)).toBe(true);
+  });
+
+  it("writes MNA names without space padding", () => {
+    expect(Buffer.from(kenwoodNameWriteCommand(0, "")).toString("ascii")).toBe("MNA 000,\r");
+    expect(Buffer.from(kenwoodNameWriteCommand(0, "WX")).toString("ascii")).toBe("MNA 000,WX\r");
+    expect(Buffer.from(kenwoodNameWriteCommand(0, "CALL")).toString("ascii")).toBe("MNA 000,CALL\r");
+    expect(Buffer.from(kenwoodNameWriteCommand(0, "12345678")).toString("ascii")).toBe("MNA 000,12345678\r");
+    expect(Buffer.from(kenwoodNameWriteCommand(0, "123456789")).toString("ascii")).toBe("MNA 000,12345678\r");
+  });
+
+  it("rstrips space-padded MNA replies on read", () => {
+    expect(parseKenwoodNameLine("MNA 000,        ")).toBe("");
   });
 });
