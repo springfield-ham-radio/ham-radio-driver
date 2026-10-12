@@ -1,3 +1,9 @@
+## [3.5.4](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.5.3...v3.5.4) (2026-10-12)
+
+### Bug Fixes
+
+* **cat:** TH-F6 MNA padding and CAT write rejection handling ([#26](https://github.com/springfield-ham-radio/ham-radio-driver/issues/26)) ([1469b77](https://github.com/springfield-ham-radio/ham-radio-driver/commit/1469b77e001b11ff76a26becbc89c00ab132154f)), closes [#24](https://github.com/springfield-ham-radio/ham-radio-driver/issues/24) [#25](https://github.com/springfield-ham-radio/ham-radio-driver/issues/25)
+
 ## [3.5.3](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.5.2...v3.5.3) (2026-10-12)
 
 ### Bug Fixes
