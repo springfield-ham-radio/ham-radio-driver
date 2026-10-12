@@ -1,3 +1,9 @@
+## [3.5.2](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.5.1...v3.5.2) (2026-10-12)
+
+### Bug Fixes
+
+* **deps:** bump fast-uri from 3.1.7 to 3.1.8 ([#16](https://github.com/springfield-ham-radio/ham-radio-driver/issues/16)) ([2c36009](https://github.com/springfield-ham-radio/ham-radio-driver/commit/2c3600928d13dcdb84662b66e80690920f96a854))
+
 ## [3.5.1](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.5.0...v3.5.1) (2026-10-04)
 
 ### Bug Fixes
