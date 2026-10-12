@@ -1,15 +1,34 @@
 import { describe, expect, it } from "vitest";
 import {
+  NOAA_WEATHER_RADIO_FREQUENCIES_HZ,
   emptyKenwoodThF6Record,
   isKenwoodCatError,
   kenwoodMemoryReadCommand,
   kenwoodMemoryWriteCommand,
   kenwoodNameReadCommand,
+  kenwoodNameWriteCommand,
   packKenwoodThF6Record,
   parseKenwoodMemoryReadLine,
   parseKenwoodNameLine,
   unpackKenwoodThF6Record,
 } from "../../../src/utils/kenwood-th-f6-cat.js";
+
+const hamBenchWeatherSpec = (freq: number) => ({
+  freq,
+  offset: 0,
+  tuningStep: 0,
+  duplex: 0,
+  reverse: 0,
+  toneMode: 0,
+  ctcssMode: 0,
+  dtcsMode: 0,
+  rtone: 0,
+  ctone: 0,
+  dtcsCode: 0,
+  mode: 0,
+  skip: 0,
+  split: false,
+});
 
 describe("kenwood-th-f6-cat", () => {
   it("parses an MR reply with command echo into a simplex memory", () => {
@@ -63,5 +82,32 @@ describe("kenwood-th-f6-cat", () => {
     const empty = emptyKenwoodThF6Record();
     expect(empty).toHaveLength(32);
     expect([...empty].every((byte) => byte === 255)).toBe(true);
+  });
+
+  it("writes MNA names without space padding", () => {
+    expect(Buffer.from(kenwoodNameWriteCommand(0, "")).toString("ascii")).toBe("MNA 000,\r");
+    expect(Buffer.from(kenwoodNameWriteCommand(0, "WX")).toString("ascii")).toBe("MNA 000,WX\r");
+    expect(Buffer.from(kenwoodNameWriteCommand(0, "CALL")).toString("ascii")).toBe("MNA 000,CALL\r");
+    expect(Buffer.from(kenwoodNameWriteCommand(0, "12345678")).toString("ascii")).toBe("MNA 000,12345678\r");
+    expect(Buffer.from(kenwoodNameWriteCommand(0, "123456789")).toString("ascii")).toBe("MNA 000,12345678\r");
+  });
+
+  it("rstrips space-padded MNA replies on read", () => {
+    expect(parseKenwoodNameLine("MNA 000,        ")).toBe("");
+  });
+
+  it("zero-pads rtone and ctone on MW for all channels including NOAA weather", () => {
+    const simplex = hamBenchWeatherSpec(146_520_000);
+    const simplexLine = Buffer.from(kenwoodMemoryWriteCommand(0, simplex)).toString("ascii").trim();
+
+    expect(simplexLine).toBe("MW 0,000,00146520000,0,0,0,0,0,0,00,00,000,000000000,0,0");
+
+    for (const freq of NOAA_WEATHER_RADIO_FREQUENCIES_HZ) {
+      const record = packKenwoodThF6Record(hamBenchWeatherSpec(freq), "WX");
+      const { spec } = unpackKenwoodThF6Record(record);
+      const line = Buffer.from(kenwoodMemoryWriteCommand(6, spec)).toString("ascii").trim();
+
+      expect(line).toBe(`MW 0,006,${freq.toString().padStart(11, "0")},0,0,0,0,0,0,00,00,000,000000000,0,0`);
+    }
   });
 });

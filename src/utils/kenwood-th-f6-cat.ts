@@ -27,6 +27,17 @@ export const KENWOOD_TH_F6_INDEX_WIDTH = 3;
 export const KENWOOD_TH_F6_EMPTY_BYTE = 255;
 export const KENWOOD_CAT_CR = 0x0d;
 
+/** NOAA Weather Radio channel frequencies (Hz), WX1–WX7. */
+export const NOAA_WEATHER_RADIO_FREQUENCIES_HZ = [
+  162_550_000,
+  162_400_000,
+  162_475_000,
+  162_425_000,
+  162_450_000,
+  162_500_000,
+  162_525_000,
+] as const;
+
 const NAME_OFFSET = 24;
 const NAME_LENGTH = 8;
 
@@ -84,8 +95,9 @@ export const kenwoodMemoryWriteCommand = (index: number, spec?: KenwoodThF6Memor
     spec.toneMode.toString(),
     spec.ctcssMode.toString(),
     spec.dtcsMode.toString(),
-    spec.rtone.toString(),
-    spec.ctone.toString(),
+    // TH-F6 live CAT rejects single-digit rtone/ctone fields (N); CHIRP uses %02i.
+    spec.rtone.toString().padStart(2, "0"),
+    spec.ctone.toString().padStart(2, "0"),
     spec.dtcsCode.toString().padStart(3, "0"),
     spec.offset.toString().padStart(9, "0"),
     spec.mode.toString(),
@@ -96,8 +108,8 @@ export const kenwoodMemoryWriteCommand = (index: number, spec?: KenwoodThF6Memor
 };
 
 export const kenwoodNameWriteCommand = (index: number, name: string): number[] => {
-  const padded = name.replace(/\0/g, " ").slice(0, NAME_LENGTH).padEnd(NAME_LENGTH, " ");
-  return asciiCommand(`MNA ${padIndex(index)},${padded}`);
+  const trimmed = name.replace(/\0/g, " ").trimEnd().slice(0, NAME_LENGTH);
+  return asciiCommand(`MNA ${padIndex(index)},${trimmed}`);
 };
 
 export const kenwoodSplitWriteCommand = (index: number, transmitFrequency: number): number[] =>

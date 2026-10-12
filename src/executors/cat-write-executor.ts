@@ -5,7 +5,14 @@ import { executeExchange } from "../utils/step-utils.js";
 import { isCatWriteStep } from "../utils/step-guards.js";
 import { advanceProgress } from "../utils/progress-utils.js";
 import { catEmptyByte, catLineFromResponse, catTimeoutMs, delayMs, getCatPacker } from "../utils/cat-packers.js";
+import { isKenwoodCatError } from "../utils/kenwood-th-f6-cat.js";
 import { StepExecutor } from "./base.js";
+
+interface CatWriteRejection {
+  index: number;
+  command: string;
+  reply: string;
+}
 
 const CAT_UNTIL_CR = { until: "0x0D" } as const;
 
@@ -45,6 +52,8 @@ export class CatWriteExecutor implements StepExecutor {
       name: config.segment,
     };
 
+    const rejections: CatWriteRejection[] = [];
+
     for (let index = 0; index < config.count; index++) {
       if (context.progressIndicator?.isCanceled) {
         throw new CancelledException("Radio CAT write was cancelled");
@@ -59,21 +68,41 @@ export class CatWriteExecutor implements StepExecutor {
       context.currentSegment.currentAddress = recordOffset;
       const record = context.memoryBuffer.slice(recordOffset, recordOffset + config.recordSize);
 
-      await this.exchangeLine(packer.memoryWriteCommand(index, record, emptyByte), timeout, context, delay);
+      const memoryLine = await this.exchangeLine(packer.memoryWriteCommand(index, record, emptyByte), timeout, context, delay);
+
+      if (isKenwoodCatError(memoryLine)) {
+        rejections.push({ index, command: "MW", reply: memoryLine });
+        advanceProgress(context);
+        continue;
+      }
 
       const nameCommand = packer.nameWriteCommand(index, record);
 
       if (nameCommand) {
-        await this.exchangeLine(nameCommand, timeout, context, delay);
+        const nameLine = await this.exchangeLine(nameCommand, timeout, context, delay);
+
+        if (isKenwoodCatError(nameLine)) {
+          rejections.push({ index, command: "MNA", reply: nameLine });
+        }
       }
 
       const splitCommand = packer.splitWriteCommand(index, record);
 
       if (splitCommand) {
-        await this.exchangeLine(splitCommand, timeout, context, delay);
+        const splitLine = await this.exchangeLine(splitCommand, timeout, context, delay);
+
+        if (isKenwoodCatError(splitLine)) {
+          rejections.push({ index, command: "MW split", reply: splitLine });
+        }
       }
 
       advanceProgress(context);
+    }
+
+    if (rejections.length > 0) {
+      const channels = [...new Set(rejections.map((rejection) => rejection.index))].sort((left, right) => left - right);
+      const details = rejections.map((rejection) => `${rejection.index} (${rejection.command} replied ${rejection.reply || "empty"})`).join("; ");
+      throw new Error(`Radio rejected channels ${channels.join(", ")}: ${details}`);
     }
   }
 
