@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  NOAA_WEATHER_RADIO_FREQUENCIES_HZ,
   emptyKenwoodThF6Record,
   isKenwoodCatError,
   kenwoodMemoryReadCommand,
@@ -11,6 +12,25 @@ import {
   parseKenwoodNameLine,
   unpackKenwoodThF6Record,
 } from "../../../src/utils/kenwood-th-f6-cat.js";
+
+const hamBenchWeatherSpec = (freq: number) => ({
+  freq,
+  offset: 0,
+  tuningStep: 0,
+  duplex: 0,
+  reverse: 0,
+  toneMode: 0,
+  ctcssMode: 0,
+  dtcsMode: 0,
+  rtone: 0,
+  ctone: 0,
+  dtcsCode: 0,
+  mode: 0,
+  skip: 0,
+  split: false,
+});
+
+const weatherStepHex = (freq: number): string => (freq === 162_400_000 || freq === 162_425_000 || freq === 162_475_000 ? "5" : "0");
 
 describe("kenwood-th-f6-cat", () => {
   it("parses an MR reply with command echo into a simplex memory", () => {
@@ -76,5 +96,17 @@ describe("kenwood-th-f6-cat", () => {
 
   it("rstrips space-padded MNA replies on read", () => {
     expect(parseKenwoodNameLine("MNA 000,        ")).toBe("");
+  });
+
+  it("normalizes NOAA weather logical records into Kenwood live MW lines", () => {
+    for (const freq of NOAA_WEATHER_RADIO_FREQUENCIES_HZ) {
+      const record = packKenwoodThF6Record(hamBenchWeatherSpec(freq), "WX");
+      const { spec } = unpackKenwoodThF6Record(record);
+      const line = Buffer.from(kenwoodMemoryWriteCommand(6, spec)).toString("ascii").trim();
+
+      expect(line).toBe(
+        `MW 0,006,${freq.toString().padStart(11, "0")},${weatherStepHex(freq)},0,0,0,0,0,08,08,000,000600000,0,0`,
+      );
+    }
   });
 });

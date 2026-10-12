@@ -27,6 +27,30 @@ export const KENWOOD_TH_F6_INDEX_WIDTH = 3;
 export const KENWOOD_TH_F6_EMPTY_BYTE = 255;
 export const KENWOOD_CAT_CR = 0x0d;
 
+/** NOAA Weather Radio channel frequencies (Hz), WX1–WX7. */
+export const NOAA_WEATHER_RADIO_FREQUENCIES_HZ = [
+  162_550_000,
+  162_400_000,
+  162_475_000,
+  162_425_000,
+  162_450_000,
+  162_500_000,
+  162_525_000,
+] as const;
+
+export const NOAA_WEATHER_RADIO_MIN_HZ = 162_400_000;
+export const NOAA_WEATHER_RADIO_MAX_HZ = 162_550_000;
+
+/** Kenwood TH-F6 tuning-step table (kHz); CAT sends the hex index into this list. */
+export const KENWOOD_TH_F6_TUNING_STEPS_KHZ = [5, 6.25, 8.33, 9, 10, 12.5, 15, 20, 25, 30, 50, 100] as const;
+
+/** CHIRP default simplex offset field and idle tone indices for Kenwood live CAT. */
+const KENWOOD_TH_F6_DEFAULT_OFFSET_HZ = 600_000;
+const KENWOOD_TH_F6_DEFAULT_TONE_INDEX = 8;
+
+/** TH-F6 rejects these NOAA channels unless the tuning step is 12.5 kHz (index 5). */
+const NOAA_WEATHER_REQUIRES_12_5_KHZ = new Set<number>([162_400_000, 162_425_000, 162_475_000]);
+
 const NAME_OFFSET = 24;
 const NAME_LENGTH = 8;
 
@@ -71,25 +95,61 @@ export const kenwoodNameReadCommand = (index: number): number[] => asciiCommand(
 
 export const kenwoodSplitReadCommand = (index: number): number[] => asciiCommand(`MR 1,${padIndex(index)}`);
 
+export const isNoaaWeatherRadioFrequency = (freqHz: number): boolean =>
+  freqHz >= NOAA_WEATHER_RADIO_MIN_HZ && freqHz <= NOAA_WEATHER_RADIO_MAX_HZ;
+
+/**
+ * Adjust logical memory fields to the Kenwood TH-F6 live CAT wire format.
+ *
+ * HamBench's logical image leaves simplex offset at 0 and tone indices at 0.
+ * CHIRP (and the TH-F6 on the air) expect the default 600 kHz offset field and
+ * 88.5 Hz tone placeholders on NOAA weather channels, plus 12.5 kHz steps on
+ * 162.400 / 162.425 / 162.475 MHz.
+ */
+export const normalizeKenwoodThF6CatWriteSpec = (spec: KenwoodThF6MemorySpec): KenwoodThF6MemorySpec => {
+  if (!isNoaaWeatherRadioFrequency(spec.freq)) {
+    return spec;
+  }
+
+  const next: KenwoodThF6MemorySpec = { ...spec, mode: 0 };
+
+  if (NOAA_WEATHER_REQUIRES_12_5_KHZ.has(next.freq)) {
+    next.tuningStep = KENWOOD_TH_F6_TUNING_STEPS_KHZ.indexOf(12.5);
+  }
+
+  if (next.duplex === 0 && !next.split) {
+    next.offset = KENWOOD_TH_F6_DEFAULT_OFFSET_HZ;
+  }
+
+  if (next.toneMode === 0 && next.ctcssMode === 0 && next.dtcsMode === 0) {
+    next.rtone = KENWOOD_TH_F6_DEFAULT_TONE_INDEX;
+    next.ctone = KENWOOD_TH_F6_DEFAULT_TONE_INDEX;
+  }
+
+  return next;
+};
+
 export const kenwoodMemoryWriteCommand = (index: number, spec?: KenwoodThF6MemorySpec): number[] => {
   if (spec === undefined) {
     return asciiCommand(`MW 0,${padIndex(index)}`);
   }
 
+  const writeSpec = normalizeKenwoodThF6CatWriteSpec(spec);
+
   const fields = [
-    spec.freq.toString().padStart(11, "0"),
-    spec.tuningStep.toString(16).toUpperCase(),
-    spec.duplex.toString(),
-    spec.reverse.toString(),
-    spec.toneMode.toString(),
-    spec.ctcssMode.toString(),
-    spec.dtcsMode.toString(),
-    spec.rtone.toString(),
-    spec.ctone.toString(),
-    spec.dtcsCode.toString().padStart(3, "0"),
-    spec.offset.toString().padStart(9, "0"),
-    spec.mode.toString(),
-    spec.skip.toString(),
+    writeSpec.freq.toString().padStart(11, "0"),
+    writeSpec.tuningStep.toString(16).toUpperCase(),
+    writeSpec.duplex.toString(),
+    writeSpec.reverse.toString(),
+    writeSpec.toneMode.toString(),
+    writeSpec.ctcssMode.toString(),
+    writeSpec.dtcsMode.toString(),
+    writeSpec.rtone.toString().padStart(2, "0"),
+    writeSpec.ctone.toString().padStart(2, "0"),
+    writeSpec.dtcsCode.toString().padStart(3, "0"),
+    writeSpec.offset.toString().padStart(9, "0"),
+    writeSpec.mode.toString(),
+    writeSpec.skip.toString(),
   ];
 
   return asciiCommand(`MW 0,${padIndex(index)},${fields.join(",")}`);
