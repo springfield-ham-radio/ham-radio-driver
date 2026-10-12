@@ -1,3 +1,9 @@
+## [3.5.3](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.5.2...v3.5.3) (2026-10-12)
+
+### Bug Fixes
+
+* **deps:** bump brace-expansion from 2.1.4 to 2.1.7 ([#15](https://github.com/springfield-ham-radio/ham-radio-driver/issues/15)) ([d03e84b](https://github.com/springfield-ham-radio/ham-radio-driver/commit/d03e84b61d4e49651e523ebe9130516146d83a1c))
+
 ## [3.5.2](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.5.1...v3.5.2) (2026-10-12)
 
 ### Bug Fixes
