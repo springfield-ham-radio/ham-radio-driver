@@ -21,12 +21,12 @@ const occupiedSpec = {
   split: false,
 };
 
-const catWriteAck = "0";
+type MockReply = string | ((command: string) => string);
 
 class MockCatPort extends EventEmitter {
   public writes: string[] = [];
 
-  constructor(private readonly rejectMemoryWriteIndexes = new Set<number>()) {
+  constructor(private readonly replyFor: (command: string) => MockReply = () => "0") {
     super();
   }
 
@@ -35,18 +35,9 @@ class MockCatPort extends EventEmitter {
     this.writes.push(text);
 
     setImmediate(() => {
-      const memoryMatch = /^MW 0,(\d{3})(?:,|\r)/.exec(text);
-
-      if (memoryMatch) {
-        const index = Number.parseInt(memoryMatch[1] ?? "0", 10);
-
-        if (this.rejectMemoryWriteIndexes.has(index)) {
-          this.emit("data", Buffer.from("N\r"));
-          return;
-        }
-      }
-
-      this.emit("data", Buffer.from(`${catWriteAck}\r`));
+      const reply = this.replyFor(text);
+      const line = typeof reply === "function" ? reply(text) : reply;
+      this.emit("data", Buffer.from(`${line}\r`));
     });
 
     return true;
@@ -70,9 +61,19 @@ const buildContext = (memoryBuffer: Uint8Array, port: MockCatPort, count: number
     completedProgressUnits: 0,
   });
 
+const catWriteStep = (count: number) => ({
+  catWrite: {
+    count,
+    pack: "kenwood-th-f6" as const,
+    recordSize: 32,
+    segment: "channels",
+    timeout: 500,
+  },
+});
+
 describe("CatWriteExecutor", () => {
   it("writes occupied memories and deletes empty slots", async () => {
-    const port = new MockCatPort();
+    const port = new MockCatPort((command) => (command === "MW 0,001\r" ? "MW" : "0"));
     const occupied = packKenwoodThF6Record(occupiedSpec, "CALL");
     const memoryBuffer = new Uint8Array(64).fill(255);
     memoryBuffer.set(occupied, 0);
@@ -81,13 +82,7 @@ describe("CatWriteExecutor", () => {
     await executor.execute(
       {
         description: "Write memories via live CAT",
-        catWrite: {
-          count: 2,
-          pack: "kenwood-th-f6",
-          recordSize: 32,
-          segment: "channels",
-          timeout: 500,
-        },
+        ...catWriteStep(2),
       },
       buildContext(memoryBuffer, port, 2),
     );
@@ -98,7 +93,13 @@ describe("CatWriteExecutor", () => {
   });
 
   it("fails the write when the radio rejects a memory and still attempts other channels", async () => {
-    const port = new MockCatPort(new Set([105]));
+    const port = new MockCatPort((command) => {
+      if (command.startsWith("MW 0,105,")) {
+        return "N";
+      }
+
+      return "0";
+    });
     const occupied = packKenwoodThF6Record(occupiedSpec, "WX");
     const memoryBuffer = new Uint8Array(106 * 32).fill(255);
     memoryBuffer.set(occupied, 0);
@@ -106,23 +107,48 @@ describe("CatWriteExecutor", () => {
 
     const executor = new CatWriteExecutor();
 
-    await expect(
-      executor.execute(
-        {
-          catWrite: {
-            count: 106,
-            pack: "kenwood-th-f6",
-            recordSize: 32,
-            segment: "channels",
-            timeout: 500,
-          },
-        },
-        buildContext(memoryBuffer, port, 106),
-      ),
-    ).rejects.toThrow("Radio rejected channels 105");
+    await expect(executor.execute(catWriteStep(106), buildContext(memoryBuffer, port, 106))).rejects.toThrow(
+      "Radio rejected channels 105",
+    );
 
     expect(port.writes).toContain("MNA 000,WX\r");
     expect(port.writes.some((write) => write.startsWith("MW 0,105,"))).toBe(true);
     expect(port.writes.some((write) => write.startsWith("MNA 105,"))).toBe(false);
+  });
+
+  it("fails when MNA is rejected after a successful MW", async () => {
+    const port = new MockCatPort((command) => (command.startsWith("MNA 000,") ? "N" : "0"));
+    const occupied = packKenwoodThF6Record(occupiedSpec, "CALL");
+    const memoryBuffer = new Uint8Array(32).fill(255);
+    memoryBuffer.set(occupied, 0);
+
+    const executor = new CatWriteExecutor();
+
+    await expect(executor.execute(catWriteStep(1), buildContext(memoryBuffer, port, 1))).rejects.toThrow(
+      /0 \(MNA replied N\)/,
+    );
+  });
+
+  it("fails when split MW is rejected after MW and MNA succeed", async () => {
+    const splitSpec = {
+      ...occupiedSpec,
+      freq: 146_520_000,
+      offset: 146_940_000,
+      duplex: 3,
+      split: true,
+      toneMode: 0,
+    };
+    const port = new MockCatPort((command) => (command.startsWith("MW 1,") ? "N" : "0"));
+    const occupied = packKenwoodThF6Record(splitSpec, "SPL");
+    const memoryBuffer = new Uint8Array(32).fill(255);
+    memoryBuffer.set(occupied, 0);
+
+    const executor = new CatWriteExecutor();
+
+    await expect(executor.execute(catWriteStep(1), buildContext(memoryBuffer, port, 1))).rejects.toThrow(
+      /0 \(MW split replied N\)/,
+    );
+
+    expect(port.writes.some((write) => write.startsWith("MW 1,"))).toBe(true);
   });
 });

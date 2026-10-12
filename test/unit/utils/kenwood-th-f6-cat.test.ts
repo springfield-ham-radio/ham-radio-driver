@@ -30,8 +30,6 @@ const hamBenchWeatherSpec = (freq: number) => ({
   split: false,
 });
 
-const weatherStepHex = (freq: number): string => (freq === 162_400_000 || freq === 162_425_000 || freq === 162_475_000 ? "5" : "0");
-
 describe("kenwood-th-f6-cat", () => {
   it("parses an MR reply with command echo into a simplex memory", () => {
     const spec = parseKenwoodMemoryReadLine("MR 0,000,00146520000,0,0,0,1,0,0,8,8,000,000000000,0,0");
@@ -98,15 +96,18 @@ describe("kenwood-th-f6-cat", () => {
     expect(parseKenwoodNameLine("MNA 000,        ")).toBe("");
   });
 
-  it("normalizes NOAA weather logical records into Kenwood live MW lines", () => {
+  it("zero-pads rtone and ctone on MW for all channels including NOAA weather", () => {
+    const simplex = hamBenchWeatherSpec(146_520_000);
+    const simplexLine = Buffer.from(kenwoodMemoryWriteCommand(0, simplex)).toString("ascii").trim();
+
+    expect(simplexLine).toBe("MW 0,000,00146520000,0,0,0,0,0,0,00,00,000,000000000,0,0");
+
     for (const freq of NOAA_WEATHER_RADIO_FREQUENCIES_HZ) {
       const record = packKenwoodThF6Record(hamBenchWeatherSpec(freq), "WX");
       const { spec } = unpackKenwoodThF6Record(record);
       const line = Buffer.from(kenwoodMemoryWriteCommand(6, spec)).toString("ascii").trim();
 
-      expect(line).toBe(
-        `MW 0,006,${freq.toString().padStart(11, "0")},${weatherStepHex(freq)},0,0,0,0,0,08,08,000,000600000,0,0`,
-      );
+      expect(line).toBe(`MW 0,006,${freq.toString().padStart(11, "0")},0,0,0,0,0,0,00,00,000,000000000,0,0`);
     }
   });
 });
