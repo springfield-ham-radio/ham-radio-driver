@@ -1,3 +1,10 @@
+## [3.5.5](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.5.4...v3.5.5) (2026-10-13)
+
+### Bug Fixes
+
+* **deps:** bump handlebars from 4.7.8 to 4.7.10 ([#28](https://github.com/springfield-ham-radio/ham-radio-driver/issues/28)) ([ce1c71e](https://github.com/springfield-ham-radio/ham-radio-driver/commit/ce1c71ebdc53c05b647def677107deb4942bf33f))
+* **deps:** bump source-map-js from 1.2.1 to 1.2.2 ([#27](https://github.com/springfield-ham-radio/ham-radio-driver/issues/27)) ([0e2e325](https://github.com/springfield-ham-radio/ham-radio-driver/commit/0e2e325c6b44d0cf24624591c0cc24eba16c3ef9))
+
 ## [3.5.4](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.5.3...v3.5.4) (2026-10-12)
 
 ### Bug Fixes
