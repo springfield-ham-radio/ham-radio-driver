@@ -1,6 +1,6 @@
 import type { RadioByteToken, RadioExpect } from "@springfield/ham-radio-api";
 import type { ProtocolContext } from "../protocol-context.js";
-import { CancelledException } from "../cancelled-exception.js";
+import { throwIfProtocolCancelled } from "./cancel-guard.js";
 import { ByteLengthParser } from "@serialport/parser-byte-length";
 import { extractExpectData, getExpectedLength, matchExpect } from "./expect-matcher.js";
 import { isExpectUntil, parseLiteralByte, resolveSendTokens } from "./token-utils.js";
@@ -110,9 +110,7 @@ export abstract class ProtocolOperationTemplate {
   async execute(config: ExchangeConfig, context: ProtocolContext): Promise<Uint8Array> {
     this.validateConfiguration(config);
 
-    if (context.progressIndicator?.isCanceled) {
-      throw new CancelledException("Protocol operation was cancelled");
-    }
+    throwIfProtocolCancelled(context, "Protocol operation was cancelled");
 
     if (config.setBaudRate !== undefined && typeof context.port.update === "function") {
       context.logger.debug(`Switching baud rate to ${config.setBaudRate}`);

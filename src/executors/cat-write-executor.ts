@@ -1,6 +1,6 @@
 import type { ProtocolContext } from "../protocol-context.js";
 import type { RadioProtocolStep } from "@springfield/ham-radio-api";
-import { CancelledException } from "../cancelled-exception.js";
+import { throwIfProtocolCancelled } from "../utils/cancel-guard.js";
 import { executeExchange } from "../utils/step-utils.js";
 import { isCatWriteStep } from "../utils/step-guards.js";
 import { advanceProgress } from "../utils/progress-utils.js";
@@ -55,9 +55,7 @@ export class CatWriteExecutor implements StepExecutor {
     const rejections: CatWriteRejection[] = [];
 
     for (let index = 0; index < config.count; index++) {
-      if (context.progressIndicator?.isCanceled) {
-        throw new CancelledException("Radio CAT write was cancelled");
-      }
+      throwIfProtocolCancelled(context, "Radio CAT write was cancelled");
 
       const recordOffset = segmentConfig.startAddress + index * config.recordSize;
 
