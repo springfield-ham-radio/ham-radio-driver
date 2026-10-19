@@ -1,10 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'events';
-import { RadioModelId } from '@springfield/ham-radio-api';
+import { RadioModelId, type Radio } from '@springfield/ham-radio-api';
 import { ProtocolInterpreter } from '@src/protocol-interpreter.js';
 import { CancelledException } from '@src/cancelled-exception.js';
 import type { ProtocolContext } from '@src/protocol-context.js';
-import type { RadioProtocolWithOnError } from '@src/types/protocol-on-error.js';
 import { ON_ERROR_CLEANUP_BUDGET_MS, runProtocolOnErrorCleanup } from '@src/utils/protocol-on-error.js';
 import { RadioMemoryConfigFactory, RadioProgressIndicatorFactory } from './utils/test-factories.js';
 
@@ -37,7 +36,7 @@ function createMockPort(isOpen = true): MockPortHandle {
   return { port, writes, baudUpdates };
 }
 
-function baseProtocol(overrides: Partial<RadioProtocolWithOnError> = {}): RadioProtocolWithOnError {
+function baseProtocol(overrides: Partial<Radio> = {}): Radio {
   return {
     id: {
       model: RadioModelId('test-radio'),

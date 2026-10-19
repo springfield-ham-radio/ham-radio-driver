@@ -1,6 +1,5 @@
-import type { RadioProtocolStep } from '@springfield/ham-radio-api';
+import type { Radio, RadioProtocolStep } from '@springfield/ham-radio-api';
 import type { ProtocolContext } from './protocol-context.js';
-import type { RadioProtocolWithOnError } from './types/protocol-on-error.js';
 import { StepExecutorRegistry } from './executors/index.js';
 import { throwIfProtocolCancelled } from './utils/cancel-guard.js';
 import { countProtocolProgressUnits } from './utils/progress-utils.js';
@@ -85,7 +84,7 @@ export class ProtocolInterpreter {
    * ```
    */
   async executeProtocol(
-    protocol: RadioProtocolWithOnError,
+    protocol: Radio,
     operation: 'readMemory' | 'writeMemory',
     buffer?: Uint8Array,
   ): Promise<void> {

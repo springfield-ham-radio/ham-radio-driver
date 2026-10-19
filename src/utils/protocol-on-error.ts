@@ -1,6 +1,5 @@
-import type { RadioExchange } from "@springfield/ham-radio-api";
+import type { RadioExchange, RadioOnError } from "@springfield/ham-radio-api";
 import type { ProtocolContext } from "../protocol-context.js";
-import type { RadioOnErrorCleanup } from "../types/protocol-on-error.js";
 import { CleanupBudgetExceededError } from "./protocol-operations.js";
 import { isExchangeStep } from "./step-guards.js";
 import { executeExchange } from "./step-utils.js";
@@ -25,7 +24,7 @@ const safeLog = (context: ProtocolContext, level: "debug" | "warn", message: str
   }
 };
 
-export const getOnErrorSteps = (onError: RadioOnErrorCleanup | undefined, operation: "readMemory" | "writeMemory"): RadioExchange[] => {
+export const getOnErrorSteps = (onError: RadioOnError | undefined, operation: "readMemory" | "writeMemory"): RadioExchange[] => {
   const steps = onError?.[operation];
 
   if (steps === undefined || steps.length === 0) {
