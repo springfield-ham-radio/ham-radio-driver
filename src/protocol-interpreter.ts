@@ -92,6 +92,22 @@ export class ProtocolInterpreter {
     const steps = protocol[operation] as RadioProtocolStep[];
     const onErrorSteps = getOnErrorSteps(protocol.onError, operation);
 
+    const rethrowAfterCleanup = async (error: unknown): Promise<never> => {
+      try {
+        await runProtocolOnErrorCleanup(this.context, onErrorSteps);
+      } catch (cleanupError) {
+        const message = cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+
+        try {
+          this.context.logger.warn(`onError cleanup failed: ${message}`);
+        } catch {
+          // Logging must not replace the original protocol error.
+        }
+      }
+
+      throw error;
+    };
+
     // Set the buffer and offset in context
     if (buffer) {
       this.context.memoryBuffer = buffer;
@@ -110,8 +126,7 @@ export class ProtocolInterpreter {
         try {
           throwIfProtocolCancelled(this.context, 'Protocol execution was cancelled');
         } catch (cancelled) {
-          await runProtocolOnErrorCleanup(this.context, onErrorSteps);
-          throw cancelled;
+          await rethrowAfterCleanup(cancelled);
         }
 
         // Start UI logging for this command if UI logger is available
@@ -130,13 +145,23 @@ export class ProtocolInterpreter {
             this.context.uiLogger.logCommandSuccess(i, steps.length, operation, step as any, this.context);
           }
         } catch (error) {
-          // Log command failure if UI logger is available
+          // Log command failure if UI logger is available. A logger failure must
+          // not replace the protocol error or skip cleanup.
           if (this.context.uiLogger) {
-            this.context.uiLogger.logCommandFailure(i, steps.length, operation, step as any, error as Error, this.context);
+            try {
+              this.context.uiLogger.logCommandFailure(i, steps.length, operation, step as any, error as Error, this.context);
+            } catch (logError) {
+              const message = logError instanceof Error ? logError.message : String(logError);
+
+              try {
+                this.context.logger.warn(`Failed to log command failure: ${message}`);
+              } catch {
+                // Ignore logger failures.
+              }
+            }
           }
 
-          await runProtocolOnErrorCleanup(this.context, onErrorSteps);
-          throw error;
+          await rethrowAfterCleanup(error);
         }
       }
 

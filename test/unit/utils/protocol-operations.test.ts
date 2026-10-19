@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'events';
-import { ProtocolOperationTemplate, SendReceiveOperation } from '@src/utils/protocol-operations.js';
+import { CleanupBudgetExceededError, ProtocolOperationTemplate, SendReceiveOperation } from '@src/utils/protocol-operations.js';
 import { CancelledException } from '@src/cancelled-exception.js';
 import type { ProtocolContext } from '@src/protocol-context.js';
 import { ProtocolContextFactory } from './test-factories.js';
@@ -223,6 +223,79 @@ describe('protocol-operations', () => {
 
         const result = await pending;
         expect(Buffer.from(result).toString("ascii")).toBe("ID TH-F6A");
+      });
+
+      it('unpipes the parser when send fails without waiting for the receive timeout', async () => {
+        const unpiped: object[] = [];
+
+        (mockContext.port as any).pipe = (destination: EventEmitter) => destination;
+        (mockContext.port as any).unpipe = (destination: object) => {
+          unpiped.push(destination);
+        };
+        (mockContext.port as any).write = function (_data: Uint8Array, callback?: (error?: Error | null) => void) {
+          callback?.(new Error('port write failed'));
+        };
+
+        const started = Date.now();
+
+        await expect(operation.execute({ send: [0x06], expect: { bytes: 1 }, timeout: 10_000 }, mockContext)).rejects.toThrow(
+          /port write failed/,
+        );
+
+        expect(Date.now() - started).toBeLessThan(1000);
+        expect(unpiped).toHaveLength(1);
+      });
+
+      it('removes the delimiter listener when the read times out', async () => {
+        (mockContext.port as any).write = () => true;
+
+        await expect(operation.execute({ send: ['E'], expect: { until: '0x0D' }, timeout: 20 }, mockContext)).rejects.toThrow(
+          /Timeout waiting for delimiter/,
+        );
+
+        expect(mockPort.listenerCount('data')).toBe(0);
+      });
+
+      it('removes the delimiter listener when send fails', async () => {
+        (mockContext.port as any).write = function (_data: Uint8Array, callback?: (error?: Error | null) => void) {
+          callback?.(new Error('port write failed'));
+        };
+
+        const started = Date.now();
+
+        await expect(
+          operation.execute({ send: ['E'], expect: { until: '0x0D' }, timeout: 10_000 }, mockContext),
+        ).rejects.toThrow(/port write failed/);
+
+        expect(Date.now() - started).toBeLessThan(1000);
+        expect(mockPort.listenerCount('data')).toBe(0);
+      });
+
+      it('removes the delimiter listener when the cleanup budget expires during a wedged write', async () => {
+        vi.useFakeTimers();
+
+        try {
+          (mockContext.port as any).write = function (_data: Uint8Array, _callback?: (error?: Error | null) => void) {
+            // Flow control never completes the write.
+          };
+
+          const pending = operation.execute(
+            {
+              deadlineAt: Date.now() + 1500,
+              expect: { until: '0x0D' },
+              send: ['E'],
+              timeout: 10_000,
+            },
+            mockContext,
+          );
+          const assertion = expect(pending).rejects.toBeInstanceOf(CleanupBudgetExceededError);
+
+          await vi.advanceTimersByTimeAsync(1500);
+          await assertion;
+          expect(mockPort.listenerCount('data')).toBe(0);
+        } finally {
+          vi.useRealTimers();
+        }
       });
 
       it("ignores empty CR wake echoes before the CAT reply", async () => {

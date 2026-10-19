@@ -5,7 +5,7 @@ import { ProtocolInterpreter } from '@src/protocol-interpreter.js';
 import { CancelledException } from '@src/cancelled-exception.js';
 import type { ProtocolContext } from '@src/protocol-context.js';
 import type { RadioProtocolWithOnError } from '@src/types/protocol-on-error.js';
-import { ON_ERROR_CLEANUP_BUDGET_MS } from '@src/utils/protocol-on-error.js';
+import { ON_ERROR_CLEANUP_BUDGET_MS, runProtocolOnErrorCleanup } from '@src/utils/protocol-on-error.js';
 import { RadioMemoryConfigFactory, RadioProgressIndicatorFactory } from './utils/test-factories.js';
 
 interface MockPortHandle {
@@ -262,5 +262,237 @@ describe('ProtocolInterpreter onError cleanup', () => {
 
   it('exports a 1500 ms cleanup budget constant', () => {
     expect(ON_ERROR_CLEANUP_BUDGET_MS).toBe(1500);
+  });
+
+  it('uses the onError list for the operation that failed', async () => {
+    const protocol = baseProtocol({
+      readMemory: [{ send: [0x01], expect: { bytes: 1 }, timeout: 1 }],
+      writeMemory: [{ send: [0x02], expect: { bytes: 1 }, timeout: 1 }],
+      onError: {
+        readMemory: [{ send: ['E'] }],
+        writeMemory: [{ send: ['W'] }],
+      },
+    });
+
+    await expect(new ProtocolInterpreter(createContext(mock.port)).executeProtocol(protocol, 'readMemory')).rejects.toThrow(
+      /Timeout waiting for response/,
+    );
+    expect(writePayloads(mock.writes)).toContain(0x45);
+    expect(writePayloads(mock.writes)).not.toContain('W'.charCodeAt(0));
+
+    mock = createMockPort();
+    await expect(new ProtocolInterpreter(createContext(mock.port)).executeProtocol(protocol, 'writeMemory')).rejects.toThrow(
+      /Timeout waiting for response/,
+    );
+    expect(writePayloads(mock.writes)).toContain('W'.charCodeAt(0));
+    expect(writePayloads(mock.writes)).not.toContain(0x45);
+  });
+
+  it('skips non-exchange cleanup steps and still sends a later exchange', async () => {
+    const warn = vi.fn();
+    const context = createContext(mock.port);
+    context.logger.warn = warn;
+
+    const protocol = baseProtocol({
+      readMemory: [{ send: [0x01], expect: { bytes: 1 }, timeout: 1 }],
+      onError: {
+        readMemory: [{ read: { segments: ['channel'] } } as never, { send: ['E'] }],
+      },
+    });
+
+    await expect(new ProtocolInterpreter(context).executeProtocol(protocol, 'readMemory')).rejects.toThrow(/Timeout waiting for response/);
+
+    expect(warn.mock.calls.some((call) => String(call[0]).includes('skipped non-exchange step'))).toBe(true);
+    expect(writePayloads(mock.writes)).toContain(0x45);
+  });
+
+  it('sends later cleanup bytes when cancel flips true during cleanup', async () => {
+    const progress = RadioProgressIndicatorFactory.build({ isCanceled: false });
+
+    mock.port.write = (data, callback) => {
+      mock.writes.push(data instanceof Uint8Array ? data : new Uint8Array(data));
+
+      if (data[0] === 0x11) {
+        progress.isCanceled = true;
+      }
+
+      callback?.();
+    };
+
+    const protocol = baseProtocol({
+      readMemory: [{ send: [0x01], expect: { bytes: 1 }, timeout: 1 }],
+      onError: {
+        readMemory: [{ send: [0x11] }, { send: ['E'] }],
+      },
+    });
+
+    await expect(new ProtocolInterpreter(createContext(mock.port, progress)).executeProtocol(protocol, 'readMemory')).rejects.toThrow(
+      /Timeout waiting for response/,
+    );
+
+    expect(progress.isCanceled).toBe(true);
+    expect(writePayloads(mock.writes)).toContain(0x45);
+  });
+
+  it('skips remaining cleanup steps after the port closes', async () => {
+    const debug = vi.fn();
+    const context = createContext(mock.port);
+    context.logger.debug = debug;
+
+    mock.port.write = (data, callback) => {
+      mock.writes.push(data instanceof Uint8Array ? data : new Uint8Array(data));
+
+      if (data[0] === 0x11) {
+        mock.port.isOpen = false;
+      }
+
+      callback?.();
+    };
+
+    const protocol = baseProtocol({
+      readMemory: [{ send: [0x01], expect: { bytes: 1 }, timeout: 1 }],
+      onError: {
+        readMemory: [{ send: [0x11] }, { send: ['E'] }],
+      },
+    });
+
+    await expect(new ProtocolInterpreter(context).executeProtocol(protocol, 'readMemory')).rejects.toThrow(/Timeout waiting for response/);
+
+    expect(writePayloads(mock.writes)).not.toContain(0x45);
+    expect(debug.mock.calls.some((call) => String(call[0]).includes('serial port is closed'))).toBe(true);
+    expect(context.inCleanup).toBe(false);
+  });
+
+  it('rethrows the original error when cleanup logging throws and still runs later steps', async () => {
+    const context = createContext(mock.port);
+    context.logger.warn = () => {
+      throw new Error('logger exploded');
+    };
+
+    const protocol = baseProtocol({
+      readMemory: [{ send: [0x01], expect: { bytes: 1 }, timeout: 1 }],
+      onError: {
+        readMemory: [{ send: [0x99], expect: { bytes: 1 }, timeout: 1 }, { send: ['E'] }],
+      },
+    });
+
+    await expect(new ProtocolInterpreter(context).executeProtocol(protocol, 'readMemory')).rejects.toThrow(/Timeout waiting for response/);
+    expect(writePayloads(mock.writes)).toContain(0x45);
+    expect(context.inCleanup).toBe(false);
+  });
+
+  it('does not recurse when cleanup is re-entered', async () => {
+    const context = createContext(mock.port);
+    let reentered = false;
+
+    mock.port.write = (data, callback) => {
+      const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+      mock.writes.push(bytes);
+      callback?.();
+
+      if (bytes[0] === 0x11 && !reentered) {
+        reentered = true;
+        void runProtocolOnErrorCleanup(context, [{ send: ['E'] }]);
+      }
+    };
+
+    const protocol = baseProtocol({
+      readMemory: [{ send: [0x01], expect: { bytes: 1 }, timeout: 1 }],
+      onError: {
+        readMemory: [{ send: [0x11] }, { send: ['E'] }],
+      },
+    });
+
+    await expect(new ProtocolInterpreter(context).executeProtocol(protocol, 'readMemory')).rejects.toThrow(/Timeout waiting for response/);
+
+    expect(reentered).toBe(true);
+    expect(writePayloads(mock.writes).filter((byte) => byte === 0x45)).toHaveLength(1);
+    expect(context.inCleanup).toBe(false);
+  });
+
+  it('stops a wedged cleanup write at the budget and rethrows the original error', async () => {
+    vi.useFakeTimers();
+
+    try {
+      const warn = vi.fn();
+      const context = createContext(mock.port);
+      context.logger.warn = warn;
+
+      mock.port.write = function (data: Uint8Array, _callback?: (error?: Error | null) => void) {
+        mock.writes.push(data instanceof Uint8Array ? data : new Uint8Array(data));
+      };
+
+      const protocol = baseProtocol({
+        readMemory: [{ send: [0x01], expect: { bytes: 1 }, timeout: 20 }],
+        onError: {
+          readMemory: [{ send: [0x11] }, { send: ['E'] }],
+        },
+      });
+
+      const pending = new ProtocolInterpreter(context).executeProtocol(protocol, 'readMemory');
+      const assertion = expect(pending).rejects.toThrow(/Timeout waiting for response/);
+
+      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(ON_ERROR_CLEANUP_BUDGET_MS);
+      await assertion;
+
+      expect(warn).toHaveBeenCalledWith('onError cleanup stopped: time budget exceeded');
+      expect(writePayloads(mock.writes)).toContain(0x11);
+      expect(writePayloads(mock.writes)).not.toContain(0x45);
+      expect(context.inCleanup).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('continues cleanup when setBaudRate rejects and still sends the following byte', async () => {
+    const warn = vi.fn();
+    const context = createContext(mock.port);
+    context.logger.warn = warn;
+    mock.port.update = async () => {
+      throw new Error('baud update failed');
+    };
+
+    const protocol = baseProtocol({
+      readMemory: [{ send: [0x01], expect: { bytes: 1 }, timeout: 1 }],
+      onError: {
+        readMemory: [{ setBaudRate: 57600 }, { send: ['E'] }],
+      },
+    });
+
+    await expect(new ProtocolInterpreter(context).executeProtocol(protocol, 'readMemory')).rejects.toThrow(/Timeout waiting for response/);
+
+    expect(writePayloads(mock.writes)).toContain(0x45);
+    expect(warn.mock.calls.some((call) => String(call[0]).includes('baud update failed'))).toBe(true);
+    expect(context.inCleanup).toBe(false);
+  });
+
+  it('stops cleanup when setBaudRate never settles and does not send the following byte', async () => {
+    vi.useFakeTimers();
+
+    try {
+      const context = createContext(mock.port);
+      mock.port.update = () => new Promise(() => undefined);
+
+      const protocol = baseProtocol({
+        readMemory: [{ send: [0x01], expect: { bytes: 1 }, timeout: 20 }],
+        onError: {
+          readMemory: [{ setBaudRate: 57600 }, { send: ['E'] }],
+        },
+      });
+
+      const pending = new ProtocolInterpreter(context).executeProtocol(protocol, 'readMemory');
+      const assertion = expect(pending).rejects.toThrow(/Timeout waiting for response/);
+
+      await vi.advanceTimersByTimeAsync(20);
+      await vi.advanceTimersByTimeAsync(ON_ERROR_CLEANUP_BUDGET_MS);
+      await assertion;
+
+      expect(mock.baudUpdates).toEqual([]);
+      expect(writePayloads(mock.writes)).not.toContain(0x45);
+      expect(context.inCleanup).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -12,19 +12,88 @@ export interface ExchangeConfig {
   delay?: number;
   description?: string;
   setBaudRate?: number;
+  /**
+   * Absolute timestamp. Cleanup passes this so a wedged write, delay, or expect
+   * cannot run past the shared onError budget. Normal exchanges leave it unset.
+   */
+  deadlineAt?: number;
 }
 
+/** Thrown when an exchange hits `deadlineAt`. Cleanup treats this as a hard stop. */
+export class CleanupBudgetExceededError extends Error {
+  constructor() {
+    super("onError cleanup stopped: time budget exceeded");
+    this.name = "CleanupBudgetExceededError";
+  }
+}
+
+const throwIfBudgetExceeded = (deadlineAt: number | undefined): void => {
+  if (deadlineAt !== undefined && Date.now() >= deadlineAt) {
+    throw new CleanupBudgetExceededError();
+  }
+};
+
+const boundedTimeoutMs = (timeout: number | undefined, deadlineAt: number | undefined): number => {
+  const configured = timeout ?? 5000;
+
+  if (deadlineAt === undefined) {
+    return configured;
+  }
+
+  return Math.max(0, Math.min(configured, deadlineAt - Date.now()));
+};
+
 const releaseParser = (context: ProtocolContext, parser: ByteLengthParser): void => {
-  if (typeof context.port.unpipe === "function") {
-    context.port.unpipe(parser);
+  try {
+    if (typeof context.port.unpipe === "function") {
+      context.port.unpipe(parser);
+    }
+  } catch {
+    // The port may already be closed. Still drop listeners below.
   }
 
   parser.removeAllListeners();
 };
 
-const asDataListenerTarget = (
-  port: ProtocolContext["port"],
-): { on: (event: string, listener: (data: Buffer) => void) => void; off: (event: string, listener: (data: Buffer) => void) => void } => {
+/**
+ * Stop waiting for `work` when the cleanup budget is gone.
+ * A late rejection from `work` is swallowed so it cannot replace the caller's error.
+ */
+const awaitWithDeadline = async <T>(work: Promise<T>, deadlineAt: number | undefined): Promise<T> => {
+  if (deadlineAt === undefined) {
+    return work;
+  }
+
+  const remaining = deadlineAt - Date.now();
+
+  if (remaining <= 0) {
+    void work.catch(() => {
+      // Already past the budget; ignore a late rejection.
+    });
+    throw new CleanupBudgetExceededError();
+  }
+
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const budget = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new CleanupBudgetExceededError());
+    }, remaining);
+  });
+
+  void work.catch(() => {
+    // If the budget wins the race, `work` may reject later.
+  });
+
+  try {
+    return await Promise.race([work, budget]);
+  } finally {
+    if (timer !== undefined) {
+      clearTimeout(timer);
+    }
+  }
+};
+
+const asDataListenerTarget = (port: ProtocolContext["port"]): { on: (event: string, listener: (data: Buffer) => void) => void; off: (event: string, listener: (data: Buffer) => void) => void } => {
   const candidate = port as unknown as {
     on?: (event: string, listener: (data: Buffer) => void) => void;
     off?: (event: string, listener: (data: Buffer) => void) => void;
@@ -42,62 +111,123 @@ const asDataListenerTarget = (
   return { on, off };
 };
 
-/**
- * Read bytes from the port until `delimiter`, excluding the delimiter.
- * Line feeds are ignored so CR-LF CAT replies do not leave a stray LF for the next command.
- */
-export const readUntilDelimiter = (
-  context: ProtocolContext,
-  delimiter: number,
-  timeoutMs: number,
-  description?: string,
-): Promise<Uint8Array> =>
-  new Promise((resolve, reject) => {
-    const chunks: number[] = [];
-    const { on, off } = asDataListenerTarget(context.port);
+type DelimiterRead = {
+  promise: Promise<Uint8Array>;
+  cancel: () => void;
+};
 
-    const onData = (data: Buffer | Uint8Array): void => {
-      for (const byte of data) {
-        if (byte === 0x0a) {
+const startReadUntilDelimiter = (context: ProtocolContext, delimiter: number, timeoutMs: number, description: string | undefined, deadlineAt: number | undefined): DelimiterRead => {
+  let settled = false;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  let rejectRead: (error: Error) => void = () => undefined;
+  const chunks: number[] = [];
+  const { on, off } = asDataListenerTarget(context.port);
+
+  const detach = (): void => {
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+      timeoutId = undefined;
+    }
+
+    try {
+      off.call(context.port, "data", onData);
+    } catch {
+      // The port may already be closed.
+    }
+  };
+
+  const finish = (): boolean => {
+    if (settled) {
+      return false;
+    }
+
+    settled = true;
+    detach();
+    return true;
+  };
+
+  const onData = (data: Buffer | Uint8Array): void => {
+    for (const byte of data) {
+      if (byte === 0x0a) {
+        continue;
+      }
+
+      if (byte === delimiter) {
+        // A bare CR is a Kenwood wake/flush echo, not a command reply.
+        if (chunks.length === 0) {
           continue;
         }
 
-        if (byte === delimiter) {
-          // A bare CR is a Kenwood wake/flush echo, not a command reply.
-          if (chunks.length === 0) {
-            continue;
-          }
-
-          finish();
-          resolve(Uint8Array.from(chunks));
-          return;
+        if (finish()) {
+          resolveRead(Uint8Array.from(chunks));
         }
-
-        chunks.push(byte);
+        return;
       }
-    };
 
-    const finish = (): void => {
-      clearTimeout(timeoutId);
-      off.call(context.port, "data", onData);
-    };
+      chunks.push(byte);
+    }
+  };
 
-    const timeoutId = setTimeout(() => {
-      finish();
+  let resolveRead: (value: Uint8Array) => void = () => undefined;
+
+  const promise = new Promise<Uint8Array>((resolve, reject) => {
+    resolveRead = resolve;
+    rejectRead = reject;
+
+    timeoutId = setTimeout(() => {
+      if (!finish()) {
+        return;
+      }
+
+      if (deadlineAt !== undefined && Date.now() >= deadlineAt) {
+        reject(new CleanupBudgetExceededError());
+        return;
+      }
+
       reject(new Error(`Timeout waiting for delimiter: ${description || "operation"}`));
     }, timeoutMs);
 
     on.call(context.port, "data", onData);
   });
 
-const delayMs = async (milliseconds: number | undefined): Promise<void> => {
+  return {
+    promise,
+    cancel: () => {
+      if (finish()) {
+        rejectRead(new Error("Read cancelled"));
+      }
+    },
+  };
+};
+
+/**
+ * Read bytes from the port until `delimiter`, excluding the delimiter.
+ * Line feeds are ignored so CR-LF CAT replies do not leave a stray LF for the next command.
+ */
+export const readUntilDelimiter = (context: ProtocolContext, delimiter: number, timeoutMs: number, description?: string): Promise<Uint8Array> => startReadUntilDelimiter(context, delimiter, timeoutMs, description, undefined).promise;
+
+const delayMs = async (milliseconds: number | undefined, deadlineAt?: number): Promise<void> => {
   if (milliseconds === undefined || milliseconds <= 0) {
     return;
   }
 
+  let wait = milliseconds;
+
+  if (deadlineAt !== undefined) {
+    const remaining = deadlineAt - Date.now();
+
+    if (remaining <= 0) {
+      throw new CleanupBudgetExceededError();
+    }
+
+    wait = Math.min(wait, remaining);
+  }
+
   await new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
+    setTimeout(resolve, wait);
   });
+
+  throwIfBudgetExceeded(deadlineAt);
 };
 
 export abstract class ProtocolOperationTemplate {
@@ -111,15 +241,18 @@ export abstract class ProtocolOperationTemplate {
     this.validateConfiguration(config);
 
     throwIfProtocolCancelled(context, "Protocol operation was cancelled");
+    throwIfBudgetExceeded(config.deadlineAt);
 
     if (config.setBaudRate !== undefined && typeof context.port.update === "function") {
       context.logger.debug(`Switching baud rate to ${config.setBaudRate}`);
-      await context.port.update({ baudRate: config.setBaudRate });
+      await awaitWithDeadline(Promise.resolve(context.port.update({ baudRate: config.setBaudRate })), config.deadlineAt);
     }
+
+    throwIfBudgetExceeded(config.deadlineAt);
 
     if (config.expect === undefined) {
       await this.sendData(config, context);
-      await delayMs(config.delay);
+      await delayMs(config.delay, config.deadlineAt);
       return new Uint8Array(0);
     }
 
@@ -130,42 +263,93 @@ export abstract class ProtocolOperationTemplate {
         throw new Error(`Invalid until delimiter: ${String(config.expect.until)}`);
       }
 
-      const pending = readUntilDelimiter(context, delimiter, config.timeout || 5000, config.description);
-      await this.sendData(config, context);
-      await delayMs(config.delay);
-      const payload = await pending;
-      return this.handleData(Buffer.from(payload), config, context);
+      const pending = startReadUntilDelimiter(context, delimiter, boundedTimeoutMs(config.timeout, config.deadlineAt), config.description, config.deadlineAt);
+      // A send/delay failure must not leave this read pending, and cancelling it
+      // must not surface as an unhandled rejection.
+      void pending.promise.catch(() => undefined);
+
+      try {
+        await this.sendData(config, context);
+        await delayMs(config.delay, config.deadlineAt);
+        const payload = await pending.promise;
+        return this.handleData(Buffer.from(payload), config, context);
+      } catch (error) {
+        pending.cancel();
+        throw error;
+      }
     }
 
     return new Promise((resolve, reject) => {
       const parser = this.setupParser(config, context);
+      let settled = false;
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-      const timeoutId = setTimeout(() => {
-        releaseParser(context, parser);
-        reject(new Error(`Timeout waiting for response: ${config.description || "operation"}`));
-      }, config.timeout || 5000);
+      const fail = (error: unknown): void => {
+        if (settled) {
+          return;
+        }
 
-      parser.on("data", (data: Buffer) => {
-        clearTimeout(timeoutId);
-        releaseParser(context, parser);
+        settled = true;
+
+        if (timeoutId !== undefined) {
+          clearTimeout(timeoutId);
+        }
 
         try {
-          resolve(this.handleData(data, config, context));
+          releaseParser(context, parser);
+        } finally {
+          reject(error instanceof Error ? error : new Error(String(error)));
+        }
+      };
+
+      const succeed = (data: Uint8Array): void => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+
+        if (timeoutId !== undefined) {
+          clearTimeout(timeoutId);
+        }
+
+        try {
+          releaseParser(context, parser);
+        } finally {
+          resolve(data);
+        }
+      };
+
+      timeoutId = setTimeout(
+        () => {
+          if (config.deadlineAt !== undefined && Date.now() >= config.deadlineAt) {
+            fail(new CleanupBudgetExceededError());
+            return;
+          }
+
+          fail(new Error(`Timeout waiting for response: ${config.description || "operation"}`));
+        },
+        boundedTimeoutMs(config.timeout, config.deadlineAt),
+      );
+
+      parser.on("data", (data: Buffer) => {
+        try {
+          succeed(this.handleData(data, config, context));
         } catch (error) {
-          reject(error);
+          fail(error);
         }
       });
 
       parser.on("error", (error: Error) => {
-        clearTimeout(timeoutId);
-        releaseParser(context, parser);
         this.handleError(error, config);
-        reject(error);
+        fail(error);
       });
 
       void Promise.resolve(this.sendData(config, context))
-        .then(() => delayMs(config.delay))
-        .catch(reject);
+        .then(() => delayMs(config.delay, config.deadlineAt))
+        .catch((error: unknown) => {
+          fail(error);
+        });
     });
   }
 }
@@ -219,12 +403,18 @@ export class SendReceiveOperation extends ProtocolOperationTemplate {
 
     await new Promise<void>((resolve, reject) => {
       let settled = false;
+      let timer: ReturnType<typeof setTimeout> | undefined;
+
       const finish = (error?: Error | null) => {
         if (settled) {
           return;
         }
 
         settled = true;
+
+        if (timer !== undefined) {
+          clearTimeout(timer);
+        }
 
         if (error) {
           reject(error);
@@ -234,7 +424,25 @@ export class SendReceiveOperation extends ProtocolOperationTemplate {
         resolve();
       };
 
-      context.port.write(sendDataArray, finish);
+      if (config.deadlineAt !== undefined) {
+        const remaining = config.deadlineAt - Date.now();
+
+        if (remaining <= 0) {
+          finish(new CleanupBudgetExceededError());
+          return;
+        }
+
+        timer = setTimeout(() => {
+          finish(new CleanupBudgetExceededError());
+        }, remaining);
+      }
+
+      try {
+        context.port.write(sendDataArray, finish);
+      } catch (error) {
+        finish(error instanceof Error ? error : new Error(String(error)));
+        return;
+      }
 
       if (context.port.write.length < 2) {
         finish();
