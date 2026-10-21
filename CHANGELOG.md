@@ -1,3 +1,13 @@
+## [3.6.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.5.5...v3.6.0) (2026-10-21)
+
+### Features
+
+* **protocol:** run onError cleanup steps after failure or cancel ([#33](https://github.com/springfield-ham-radio/ham-radio-driver/issues/33)) ([ab157a3](https://github.com/springfield-ham-radio/ham-radio-driver/commit/ab157a3b03c841b04c6fc14ca60a2348cc0a8193))
+
+### Bug Fixes
+
+* **deps:** bump the production-npm group with 2 updates ([#31](https://github.com/springfield-ham-radio/ham-radio-driver/issues/31)) ([31c29e0](https://github.com/springfield-ham-radio/ham-radio-driver/commit/31c29e02b0d20924938dc5fcf4ef6db34f406342))
+
 ## [3.5.5](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.5.4...v3.5.5) (2026-10-13)
 
 ### Bug Fixes
