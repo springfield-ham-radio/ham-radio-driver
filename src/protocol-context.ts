@@ -148,4 +148,10 @@ export interface ProtocolContext {
    * Completed progress units for the current protocol run.
    */
   completedProgressUnits?: number;
+
+  /**
+   * True while running `onError` cleanup exchanges. Suppresses cancel checks so
+   * cleanup (for example Kenwood `E`) can be sent after the user cancels.
+   */
+  inCleanup?: boolean;
 }

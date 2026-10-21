@@ -1,6 +1,6 @@
 import type { ProtocolContext } from "../protocol-context.js";
 import type { RadioByteToken, RadioExpect, RadioExchange, RadioMemorySegment, RadioProtocolStep } from "@springfield/ham-radio-api";
-import { CancelledException } from "../cancelled-exception.js";
+import { throwIfProtocolCancelled } from "../utils/cancel-guard.js";
 import { executeExchange, extractDataFromResponse } from "../utils/step-utils.js";
 import { inclusiveSegmentSize, isExpectBytes, isExpectUntil } from "../utils/token-utils.js";
 import { isReadStep } from "../utils/step-guards.js";
@@ -58,9 +58,7 @@ export class ReadExecutor implements StepExecutor {
     }> = [];
 
     for (const segmentName of segmentNames) {
-      if (context.progressIndicator?.isCanceled) {
-        throw new CancelledException("Radio read was cancelled");
-      }
+      throwIfProtocolCancelled(context, "Radio read was cancelled");
 
       const segmentConfig = context.memoryConfig.segments[segmentName];
       if (!segmentConfig) {
@@ -121,9 +119,7 @@ export class ReadExecutor implements StepExecutor {
     }> = [];
 
     for (let address = startAddress; address <= endAddress; ) {
-      if (params.context.progressIndicator?.isCanceled) {
-        throw new CancelledException("Radio read was cancelled");
-      }
+      throwIfProtocolCancelled(params.context, "Radio read was cancelled");
 
       const remaining = endAddress - address + 1;
       const thisChunk = Math.min(chunkSize, remaining);

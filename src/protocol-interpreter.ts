@@ -1,8 +1,9 @@
-import type { RadioProtocolStep } from '@springfield/ham-radio-api';
+import type { Radio, RadioProtocolStep } from '@springfield/ham-radio-api';
 import type { ProtocolContext } from './protocol-context.js';
-import { CancelledException } from './cancelled-exception.js';
 import { StepExecutorRegistry } from './executors/index.js';
+import { throwIfProtocolCancelled } from './utils/cancel-guard.js';
 import { countProtocolProgressUnits } from './utils/progress-utils.js';
+import { getOnErrorSteps, runProtocolOnErrorCleanup } from './utils/protocol-on-error.js';
 
 /**
  * ProtocolInterpreter is responsible for executing radio communication protocols
@@ -82,8 +83,29 @@ export class ProtocolInterpreter {
    * await interpreter.executeProtocol(protocol, 'writeMemory', dataBuffer);
    * ```
    */
-  async executeProtocol(protocol: any, operation: 'readMemory' | 'writeMemory', buffer?: Uint8Array): Promise<void> {
+  async executeProtocol(
+    protocol: Radio,
+    operation: 'readMemory' | 'writeMemory',
+    buffer?: Uint8Array,
+  ): Promise<void> {
     const steps = protocol[operation] as RadioProtocolStep[];
+    const onErrorSteps = getOnErrorSteps(protocol.onError, operation);
+
+    const rethrowAfterCleanup = async (error: unknown): Promise<never> => {
+      try {
+        await runProtocolOnErrorCleanup(this.context, onErrorSteps);
+      } catch (cleanupError) {
+        const message = cleanupError instanceof Error ? cleanupError.message : String(cleanupError);
+
+        try {
+          this.context.logger.warn(`onError cleanup failed: ${message}`);
+        } catch {
+          // Logging must not replace the original protocol error.
+        }
+      }
+
+      throw error;
+    };
 
     // Set the buffer and offset in context
     if (buffer) {
@@ -98,36 +120,49 @@ export class ProtocolInterpreter {
     }
 
     for (let i = 0; i < steps.length; i++) {
-      const step = steps[i] as any;
+        const step = steps[i];
 
-      // Check for cancellation before executing each step
-      if (this.context.progressIndicator?.isCanceled) {
-        throw new CancelledException('Protocol execution was cancelled');
-      }
-
-      // Start UI logging for this command if UI logger is available
-      if (this.context.uiLogger) {
-        this.context.uiLogger.startCommand(i, steps.length, operation, step);
-      }
-
-      this.context.stepIndex = i;
-      this.context.totalSteps = steps.length;
-
-      try {
-        await this.executorRegistry.executeStep(step, this.context);
-
-        // Log successful command completion if UI logger is available
-        if (this.context.uiLogger) {
-          this.context.uiLogger.logCommandSuccess(i, steps.length, operation, step, this.context);
+        try {
+          throwIfProtocolCancelled(this.context, 'Protocol execution was cancelled');
+        } catch (cancelled) {
+          await rethrowAfterCleanup(cancelled);
         }
-      } catch (error) {
-        // Log command failure if UI logger is available
+
+        // Start UI logging for this command if UI logger is available
         if (this.context.uiLogger) {
-          this.context.uiLogger.logCommandFailure(i, steps.length, operation, step, error as Error, this.context);
+          this.context.uiLogger.startCommand(i, steps.length, operation, step as any);
         }
-        throw error;
+
+        this.context.stepIndex = i;
+        this.context.totalSteps = steps.length;
+
+        try {
+          await this.executorRegistry.executeStep(step, this.context);
+
+          // Log successful command completion if UI logger is available
+          if (this.context.uiLogger) {
+            this.context.uiLogger.logCommandSuccess(i, steps.length, operation, step as any, this.context);
+          }
+        } catch (error) {
+          // Log command failure if UI logger is available. A logger failure must
+          // not replace the protocol error or skip cleanup.
+          if (this.context.uiLogger) {
+            try {
+              this.context.uiLogger.logCommandFailure(i, steps.length, operation, step as any, error as Error, this.context);
+            } catch (logError) {
+              const message = logError instanceof Error ? logError.message : String(logError);
+
+              try {
+                this.context.logger.warn(`Failed to log command failure: ${message}`);
+              } catch {
+                // Ignore logger failures.
+              }
+            }
+          }
+
+          await rethrowAfterCleanup(error);
+        }
       }
-    }
 
     if (this.context.progressIndicator) {
       this.context.progressIndicator.setValue(1);

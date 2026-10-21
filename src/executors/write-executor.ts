@@ -1,6 +1,6 @@
 import type { ProtocolContext } from "../protocol-context.js";
 import type { RadioByteToken, RadioExpect, RadioMemorySegment, RadioProtocolStep } from "@springfield/ham-radio-api";
-import { CancelledException } from "../cancelled-exception.js";
+import { throwIfProtocolCancelled } from "../utils/cancel-guard.js";
 import { executeExchange } from "../utils/step-utils.js";
 import { isWriteStep } from "../utils/step-guards.js";
 import { advanceProgress } from "../utils/progress-utils.js";
@@ -29,9 +29,7 @@ export class WriteExecutor implements StepExecutor {
     }
 
     for (const segmentName of segmentNames) {
-      if (context.progressIndicator?.isCanceled) {
-        throw new CancelledException("Radio write was cancelled");
-      }
+      throwIfProtocolCancelled(context, "Radio write was cancelled");
 
       const segmentConfig = context.memoryConfig.segments[segmentName];
       if (!segmentConfig) {
@@ -71,9 +69,7 @@ export class WriteExecutor implements StepExecutor {
     const buffer = params.context.memoryBuffer;
 
     for (let address = startAddress; address <= endAddress; address += params.chunkSize) {
-      if (params.context.progressIndicator?.isCanceled) {
-        throw new CancelledException("Radio write was cancelled");
-      }
+      throwIfProtocolCancelled(params.context, "Radio write was cancelled");
 
       const remaining = endAddress - address + 1;
       const thisChunk = Math.min(params.chunkSize, remaining);
