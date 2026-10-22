@@ -1,3 +1,9 @@
+## [3.6.1](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.6.0...v3.6.1) (2026-10-22)
+
+### Bug Fixes
+
+* buffer split USB serial reads with session residue ([#36](https://github.com/springfield-ham-radio/ham-radio-driver/issues/36)) ([f1fe3e1](https://github.com/springfield-ham-radio/ham-radio-driver/commit/f1fe3e1255652fe948c19db8e64566b3c9f1836d))
+
 ## [3.6.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.5.5...v3.6.0) (2026-10-21)
 
 ### Features
