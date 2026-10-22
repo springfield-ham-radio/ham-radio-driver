@@ -27,12 +27,14 @@ describe("step-utils", () => {
 
   describe("executeExchange()", () => {
     it("sends resolved tokens and waits for expect", async () => {
-      const parser = new EventEmitter();
+      const port = mockContext.port as EventEmitter & { write: (data: Uint8Array) => boolean };
       let written: Uint8Array | undefined;
-      (mockContext.port as any).pipe = () => parser;
-      (mockContext.port as any).write = (data: Uint8Array) => {
+      port.write = (data: Uint8Array) => {
         written = data;
-        setImmediate(() => parser.emit("data", Buffer.from([0x06])));
+        setImmediate(() => {
+          port.emit("data", Buffer.from([0x06]));
+        });
+        return true;
       };
 
       const result = await executeExchange({ send: ["0x02"], expect: "0x06", timeout: 1000 }, mockContext);

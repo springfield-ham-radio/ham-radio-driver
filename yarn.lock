@@ -1339,7 +1339,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@serialport/parser-byte-length@npm:13.0.0, @serialport/parser-byte-length@npm:^13.0.0":
+"@serialport/parser-byte-length@npm:13.0.0":
   version: 13.0.0
   resolution: "@serialport/parser-byte-length@npm:13.0.0"
   checksum: 10c0/afae2488e2c7b143af0ecf98c8be7b0ac380c6130925f15e43ab7f5fa2b124162df499ec5a511b93ca03752f4090019105a57a17dabb63eda0279981e7555e19
@@ -1555,7 +1555,6 @@ __metadata:
     "@semantic-release/git": "npm:11.0.1"
     "@semantic-release/github": "npm:12.0.10"
     "@semantic-release/npm": "npm:13.2.0"
-    "@serialport/parser-byte-length": "npm:^13.0.0"
     "@springfield/ham-radio-api": "npm:^18.3.0"
     "@springfield/ham-radio-utils": "npm:^4.15.4"
     "@types/node": "npm:26.6.5"

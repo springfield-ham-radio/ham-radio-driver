@@ -1,9 +1,12 @@
 import type { RadioByteToken, RadioExpect } from "@springfield/ham-radio-api";
 import type { ProtocolContext } from "../protocol-context.js";
 import { throwIfProtocolCancelled } from "./cancel-guard.js";
-import { ByteLengthParser } from "@serialport/parser-byte-length";
 import { extractExpectData, getExpectedLength, matchExpect } from "./expect-matcher.js";
+import { CleanupBudgetExceededError } from "./cleanup-budget-error.js";
+import { readFixedLengthWithResidue } from "./port-receive-residue.js";
 import { isExpectUntil, parseLiteralByte, resolveSendTokens } from "./token-utils.js";
+
+export { CleanupBudgetExceededError };
 
 export interface ExchangeConfig {
   send?: RadioByteToken[];
@@ -17,14 +20,6 @@ export interface ExchangeConfig {
    * cannot run past the shared onError budget. Normal exchanges leave it unset.
    */
   deadlineAt?: number;
-}
-
-/** Thrown when an exchange hits `deadlineAt`. Cleanup treats this as a hard stop. */
-export class CleanupBudgetExceededError extends Error {
-  constructor() {
-    super("onError cleanup stopped: time budget exceeded");
-    this.name = "CleanupBudgetExceededError";
-  }
 }
 
 const throwIfBudgetExceeded = (deadlineAt: number | undefined): void => {
@@ -41,18 +36,6 @@ const boundedTimeoutMs = (timeout: number | undefined, deadlineAt: number | unde
   }
 
   return Math.max(0, Math.min(configured, deadlineAt - Date.now()));
-};
-
-const releaseParser = (context: ProtocolContext, parser: ByteLengthParser): void => {
-  try {
-    if (typeof context.port.unpipe === "function") {
-      context.port.unpipe(parser);
-    }
-  } catch {
-    // The port may already be closed. Still drop listeners below.
-  }
-
-  parser.removeAllListeners();
 };
 
 /**
@@ -232,7 +215,6 @@ const delayMs = async (milliseconds: number | undefined, deadlineAt?: number): P
 
 export abstract class ProtocolOperationTemplate {
   protected abstract validateConfiguration(config: ExchangeConfig): void;
-  protected abstract setupParser(config: ExchangeConfig, context: ProtocolContext): ByteLengthParser;
   protected abstract handleData(data: Buffer, config: ExchangeConfig, context: ProtocolContext): Uint8Array;
   protected abstract handleError(error: Error, config: ExchangeConfig): void;
   protected abstract sendData(config: ExchangeConfig, context: ProtocolContext): void | Promise<void>;
@@ -279,78 +261,30 @@ export abstract class ProtocolOperationTemplate {
       }
     }
 
-    return new Promise((resolve, reject) => {
-      const parser = this.setupParser(config, context);
-      let settled = false;
-      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const expectedLength = getExpectedLength(config.expect, context);
+    const pending = readFixedLengthWithResidue(
+      context,
+      expectedLength,
+      boundedTimeoutMs(config.timeout, config.deadlineAt),
+      config.description,
+      config.deadlineAt,
+    );
+    void pending.promise.catch(() => undefined);
 
-      const fail = (error: unknown): void => {
-        if (settled) {
-          return;
-        }
-
-        settled = true;
-
-        if (timeoutId !== undefined) {
-          clearTimeout(timeoutId);
-        }
-
-        try {
-          releaseParser(context, parser);
-        } finally {
-          reject(error instanceof Error ? error : new Error(String(error)));
-        }
-      };
-
-      const succeed = (data: Uint8Array): void => {
-        if (settled) {
-          return;
-        }
-
-        settled = true;
-
-        if (timeoutId !== undefined) {
-          clearTimeout(timeoutId);
-        }
-
-        try {
-          releaseParser(context, parser);
-        } finally {
-          resolve(data);
-        }
-      };
-
-      timeoutId = setTimeout(
-        () => {
-          if (config.deadlineAt !== undefined && Date.now() >= config.deadlineAt) {
-            fail(new CleanupBudgetExceededError());
-            return;
-          }
-
-          fail(new Error(`Timeout waiting for response: ${config.description || "operation"}`));
-        },
-        boundedTimeoutMs(config.timeout, config.deadlineAt),
-      );
-
-      parser.on("data", (data: Buffer) => {
-        try {
-          succeed(this.handleData(data, config, context));
-        } catch (error) {
-          fail(error);
-        }
+    const sendWork = Promise.resolve(this.sendData(config, context))
+      .then(() => delayMs(config.delay, config.deadlineAt))
+      .catch((error: unknown) => {
+        pending.release();
+        throw error;
       });
 
-      parser.on("error", (error: Error) => {
-        this.handleError(error, config);
-        fail(error);
-      });
-
-      void Promise.resolve(this.sendData(config, context))
-        .then(() => delayMs(config.delay, config.deadlineAt))
-        .catch((error: unknown) => {
-          fail(error);
-        });
-    });
+    try {
+      const payload = await Promise.all([pending.promise, sendWork]).then(([frame]) => frame);
+      return this.handleData(payload, config, context);
+    } catch (error) {
+      pending.release();
+      throw error;
+    }
   }
 }
 
@@ -359,14 +293,6 @@ export class SendReceiveOperation extends ProtocolOperationTemplate {
     if (config.send === undefined && config.expect === undefined && config.setBaudRate === undefined) {
       throw new Error("Exchange requires send, expect, and/or setBaudRate");
     }
-  }
-
-  protected setupParser(config: ExchangeConfig, context: ProtocolContext): ByteLengthParser {
-    if (config.expect === undefined) {
-      throw new Error("Parser setup requires expect");
-    }
-    const expectedLength = getExpectedLength(config.expect, context);
-    return context.port.pipe(new ByteLengthParser({ length: expectedLength }));
   }
 
   protected handleData(data: Buffer, config: ExchangeConfig, context: ProtocolContext): Uint8Array {

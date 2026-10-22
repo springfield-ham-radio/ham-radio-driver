@@ -4,15 +4,12 @@ import { RadioDriver } from '../../src/index.js';
 import { RadioModelId } from '@springfield/ham-radio-api';
 import { MockLogLayer } from 'loglayer';
 import { EventEmitter } from 'events';
-import { ByteLengthParser } from '@serialport/parser-byte-length';
 import type { SerialPort } from 'serialport';
 
 // Mock SerialPort class
 class MockSerialPort extends EventEmitter {
   public isOpen = false;
-  private parser: ByteLengthParser | null = null;
   private writeBuffer: Buffer[] = [];
-  private pendingResponses: (() => void)[] = [];
   private currentOperation: 'read' | 'write' | null = null; // Track current operation type
 
   constructor() {
@@ -22,17 +19,6 @@ class MockSerialPort extends EventEmitter {
       this.isOpen = true;
       this.emit('open');
     });
-  }
-
-  pipe(parser: ByteLengthParser): ByteLengthParser {
-    this.parser = parser;
-    // Send any pending responses now that parser is set up
-    this.sendPendingResponses();
-    return parser;
-  }
-
-  unpipe(): void {
-    this.parser = null;
   }
 
   write(data: Buffer | number[] | string): boolean {
@@ -112,31 +98,10 @@ class MockSerialPort extends EventEmitter {
   }
 
   private queueResponse(response: Buffer): void {
-    const sendResponse = () => {
-      if (this.parser) {
-        console.log(`MockSerialPort sending response: ${response.toString('hex')} (${response.length} bytes)`);
-        this.parser.emit('data', response);
-      } else {
-        console.log(`MockSerialPort: no parser available, queuing response`);
-      }
-    };
-
-    // If parser is already set up, send immediately, otherwise queue
-    if (this.parser) {
-      setImmediate(sendResponse);
-    } else {
-      this.pendingResponses.push(sendResponse);
-    }
-  }
-
-  private sendPendingResponses(): void {
-    console.log(`MockSerialPort: sending ${this.pendingResponses.length} pending responses`);
-    while (this.pendingResponses.length > 0) {
-      const sendResponse = this.pendingResponses.shift();
-      if (sendResponse) {
-        setImmediate(sendResponse);
-      }
-    }
+    setImmediate(() => {
+      console.log(`MockSerialPort sending response: ${response.toString('hex')} (${response.length} bytes)`);
+      this.emit('data', response);
+    });
   }
 
   private isMagicNumber(data: Buffer): boolean {
