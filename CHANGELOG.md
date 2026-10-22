@@ -1,3 +1,9 @@
+## [3.7.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.6.1...v3.7.0) (2026-10-22)
+
+### Features
+
+* **th-f6:** read and write live CAT settings block ([#37](https://github.com/springfield-ham-radio/ham-radio-driver/issues/37)) ([190d50c](https://github.com/springfield-ham-radio/ham-radio-driver/commit/190d50c6091ea70ff843de9e0a03c0cf21ea00a7))
+
 ## [3.6.1](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.6.0...v3.6.1) (2026-10-22)
 
 ### Bug Fixes
