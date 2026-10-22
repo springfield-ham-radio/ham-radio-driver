@@ -2,11 +2,7 @@ import { describe, expect, it } from "vitest";
 import { EventEmitter } from "events";
 import { CatWriteExecutor } from "../../../src/executors/cat-write-executor.js";
 import { ProtocolContextFactory } from "../utils/test-factories.js";
-import {
-  KENWOOD_TH_F6_SETTINGS_LOADED_MAGIC,
-  KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET,
-  packKenwoodThF6Record,
-} from "../../../src/utils/kenwood-th-f6-cat.js";
+import { KENWOOD_TH_F6_SETTINGS_LOADED_MAGIC, KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET, packKenwoodThF6Record } from "../../../src/utils/kenwood-th-f6-cat.js";
 
 const occupiedSpec = {
   freq: 146_520_000,
@@ -111,9 +107,7 @@ describe("CatWriteExecutor", () => {
 
     const executor = new CatWriteExecutor();
 
-    await expect(executor.execute(catWriteStep(106), buildContext(memoryBuffer, port, 106))).rejects.toThrow(
-      "Radio rejected channels 105",
-    );
+    await expect(executor.execute(catWriteStep(106), buildContext(memoryBuffer, port, 106))).rejects.toThrow("Radio rejected channels 105");
 
     expect(port.writes).toContain("MNA 000,WX\r");
     expect(port.writes.some((write) => write.startsWith("MW 0,105,"))).toBe(true);
@@ -128,9 +122,7 @@ describe("CatWriteExecutor", () => {
 
     const executor = new CatWriteExecutor();
 
-    await expect(executor.execute(catWriteStep(1), buildContext(memoryBuffer, port, 1))).rejects.toThrow(
-      /0 \(MNA replied N\)/,
-    );
+    await expect(executor.execute(catWriteStep(1), buildContext(memoryBuffer, port, 1))).rejects.toThrow(/0 \(MNA replied N\)/);
   });
 
   it("fails when split MW is rejected after MW and MNA succeed", async () => {
@@ -149,9 +141,7 @@ describe("CatWriteExecutor", () => {
 
     const executor = new CatWriteExecutor();
 
-    await expect(executor.execute(catWriteStep(1), buildContext(memoryBuffer, port, 1))).rejects.toThrow(
-      /0 \(MW split replied N\)/,
-    );
+    await expect(executor.execute(catWriteStep(1), buildContext(memoryBuffer, port, 1))).rejects.toThrow(/0 \(MW split replied N\)/);
 
     expect(port.writes.some((write) => write.startsWith("MW 1,"))).toBe(true);
   });
@@ -163,6 +153,12 @@ describe("CatWriteExecutor", () => {
     memoryBuffer.set(occupied, 0);
     memoryBuffer[12800] = 2;
     memoryBuffer[12809] = 8;
+    memoryBuffer[12818] = 0;
+    memoryBuffer[12823] = 9;
+    memoryBuffer[12826] = 1;
+    memoryBuffer.fill(0, 12828, 12836);
+    memoryBuffer[12830] = 1;
+    memoryBuffer[12834] = 1;
     memoryBuffer[KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET] = KENWOOD_TH_F6_SETTINGS_LOADED_MAGIC;
 
     const executor = new CatWriteExecutor();
@@ -181,13 +177,17 @@ describe("CatWriteExecutor", () => {
         },
         port: port as never,
         progressIndicator: { isCanceled: false, setValue: () => undefined },
-        totalProgressUnits: 12,
+        totalProgressUnits: 33,
         completedProgressUnits: 0,
       }),
     );
 
     expect(port.writes).toContain("APO 2\r");
     expect(port.writes).toContain("CNT 08\r");
+    expect(port.writes).toContain("BEP 0\r");
+    expect(port.writes).toContain("VXG 9\r");
+    expect(port.writes).toContain("NAR 1,1\r");
+    expect(port.writes).toContain("MGL   2   6 \r");
 
     const unloadedPort = new MockCatPort(() => "0");
     const unloadedBuffer = new Uint8Array(13_000).fill(255);

@@ -76,6 +76,44 @@ class MockCatPort extends EventEmitter {
         return;
       }
 
+      if (text.startsWith("NAR ")) {
+        const band = text.trim().split(" ")[1] ?? "0";
+        this.emit("data", Buffer.from(`NAR ${band},${band === "1" ? "1" : "0"}\r`));
+        return;
+      }
+
+      if (text === "MGL\r") {
+        this.emit("data", Buffer.from("MGL  1 3 5 7\r"));
+        return;
+      }
+
+      const scalarReplies: Record<string, string> = {
+        BEP: "1",
+        TXS: "0",
+        ELK: "1",
+        MRM: "1",
+        VXB: "0",
+        VXG: "4",
+        VXD: "1",
+        TSP: "1",
+        TXH: "0",
+        PT: "2",
+        DLK: "0",
+        CKEY: "0",
+        TH: "1",
+        NSFT: "0",
+        ANT: "1",
+        LAN: "0",
+        DATP: "1",
+      };
+      const name = text.replace(/\r$/, "");
+      const scalar = scalarReplies[name];
+
+      if (scalar !== undefined) {
+        this.emit("data", Buffer.from(`${name} ${scalar}\r`));
+        return;
+      }
+
       this.emit("data", Buffer.from("N\r"));
     });
 
@@ -100,7 +138,7 @@ describe("CatReadExecutor", () => {
       },
       port: port as never,
       progressIndicator: { isCanceled: false, setValue: () => undefined },
-      totalProgressUnits: 13,
+      totalProgressUnits: 34,
       completedProgressUnits: 0,
     });
 
@@ -130,6 +168,13 @@ describe("CatReadExecutor", () => {
     expect(memoryBuffer[12807]).toBe(1);
     expect(memoryBuffer[12809]).toBe(8);
     expect(Buffer.from(memoryBuffer.subarray(12810, 12818)).toString("ascii").replace(/\0/g, "")).toBe("HELLO !!");
+    expect(memoryBuffer[12818]).toBe(1);
+    expect(memoryBuffer[12823]).toBe(4);
+    expect(memoryBuffer[12825]).toBe(0);
+    expect(memoryBuffer[12826]).toBe(1);
+    expect(memoryBuffer[12827]).toBe(0);
+    expect([...memoryBuffer.subarray(12828, 12836)]).toEqual([0, 1, 0, 1, 0, 1, 0, 1]);
+    expect(memoryBuffer[12841]).toBe(1);
     expect(memoryBuffer[12927]).toBe(0xa5);
   });
 });

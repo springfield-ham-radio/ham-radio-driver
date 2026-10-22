@@ -140,6 +140,8 @@ describe("kenwood-th-f6-cat", () => {
   describe("settings CAT commands", () => {
     const settingsBuffer = (): Uint8Array => new Uint8Array(13_000);
 
+    const setLine = (command: number[]): string => Buffer.from(command).toString("ascii").replace(/\r$/, "");
+
     it("parses get replies into logical settings bytes", () => {
       expect(parseKenwoodSettingReadLine("APO", "APO 1")).toBe(1);
       expect(parseKenwoodSettingReadLine("CNT", "CNT 08")).toBe(8);
@@ -166,6 +168,67 @@ describe("kenwood-th-f6-cat", () => {
       expect(lines).toContain("CNT 08");
       expect(lines).toContain("MES HELLO !!");
       expect(kenwoodThF6SettingWriteCommands(new Uint8Array(13_000))).toEqual([]);
+    });
+
+    it.each([
+      ["BEP", "BEP 1", "BEP 1", 12818, 1],
+      ["TXS", "TXS 1", "TXS 1", 12819, 1],
+      ["ELK", "ELK 0", "ELK 0", 12820, 0],
+      ["MRM", "MRM 1", "MRM 1", 12821, 1],
+      ["VXB", "VXB 1", "VXB 1", 12822, 1],
+      ["VXG", "VXG 4", "VXG 4", 12823, 4],
+      ["VXD", "VXD 6", "VXD 6", 12824, 6],
+      ["TSP", "TSP 1", "TSP 1", 12836, 1],
+      ["TXH", "TXH 1", "TXH 1", 12837, 1],
+      ["PT", "PT 2", "PT 2", 12838, 2],
+      ["DLK", "DLK 0", "DLK 0", 12839, 0],
+      ["CKEY", "CKEY 1", "CKEY 1", 12840, 1],
+      ["TH", "TH 1", "TH 1", 12841, 1],
+      ["NSFT", "NSFT 0", "NSFT 0", 12842, 0],
+      ["ANT", "ANT 1", "ANT 1", 12843, 1],
+      ["LAN", "LAN 1", "LAN 1", 12844, 1],
+      ["DATP", "DATP 1", "DATP 1", 12845, 1],
+    ] as const)("round-trips %s", (command, getLine, setText, address, byte) => {
+      const buffer = settingsBuffer();
+      expect(parseKenwoodSettingReadLine(command, getLine)).toBe(byte);
+      expect(applyKenwoodThF6SettingRead(buffer, command, getLine)).toBe(true);
+      expect(buffer[address]).toBe(byte);
+      markKenwoodThF6SettingsLoaded(buffer, true);
+      const lines = kenwoodThF6SettingWriteCommands(buffer).map(setLine);
+      expect(lines).toContain(setText);
+    });
+
+    it("round-trips FM narrow per ham band", () => {
+      const buffer = settingsBuffer();
+      expect(parseKenwoodSettingReadLine("NAR 0", "NAR 0,1")).toBe(1);
+      expect(parseKenwoodSettingReadLine("NAR 1", "NAR 1,0")).toBe(0);
+      expect(parseKenwoodSettingReadLine("NAR 2", "NAR 2,1")).toBe(1);
+      expect(parseKenwoodSettingReadLine("NAR 0", "NAR 1,1")).toBe(undefined);
+      expect(applyKenwoodThF6SettingRead(buffer, "NAR 0", "NAR 0,1")).toBe(true);
+      expect(applyKenwoodThF6SettingRead(buffer, "NAR 1", "NAR 1,0")).toBe(true);
+      expect(applyKenwoodThF6SettingRead(buffer, "NAR 2", "NAR 2,1")).toBe(true);
+      expect(buffer[KENWOOD_TH_F6_SETTINGS_BASE + 25]).toBe(1);
+      expect(buffer[KENWOOD_TH_F6_SETTINGS_BASE + 26]).toBe(0);
+      expect(buffer[KENWOOD_TH_F6_SETTINGS_BASE + 27]).toBe(1);
+
+      markKenwoodThF6SettingsLoaded(buffer, true);
+      const lines = kenwoodThF6SettingWriteCommands(buffer).map(setLine);
+      expect(lines).toEqual(expect.arrayContaining(["NAR 0,1", "NAR 1,0", "NAR 2,1"]));
+    });
+
+    it("round-trips memory group link as an eight-character mask", () => {
+      const buffer = settingsBuffer();
+      const groups1357 = "MGL  1 3 5 7";
+      expect(parseKenwoodSettingReadLine("MGL", groups1357)).toBe(" 1 3 5 7");
+      expect(applyKenwoodThF6SettingRead(buffer, "MGL", groups1357)).toBe(true);
+      expect([...buffer.subarray(KENWOOD_TH_F6_SETTINGS_BASE + 28, KENWOOD_TH_F6_SETTINGS_BASE + 36)]).toEqual([0, 1, 0, 1, 0, 1, 0, 1]);
+
+      const groups26 = settingsBuffer();
+      expect(applyKenwoodThF6SettingRead(groups26, "MGL", "MGL   2   6")).toBe(true);
+      expect(groups26[KENWOOD_TH_F6_SETTINGS_BASE + 35]).toBe(0);
+      markKenwoodThF6SettingsLoaded(groups26, true);
+      const lines = kenwoodThF6SettingWriteCommands(groups26).map(setLine);
+      expect(lines).toContain("MGL   2   6 ");
     });
   });
 });
