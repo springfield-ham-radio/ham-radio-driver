@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RadioMemoryConfig, RadioProtocolStep } from "@springfield/ham-radio-api";
-import {
-  advanceProgress,
-  countProtocolProgressUnits,
-  countSegmentChunkUnits,
-} from "../../../src/utils/progress-utils.js";
+import { advanceProgress, countProtocolProgressUnits, countSegmentChunkUnits } from "../../../src/utils/progress-utils.js";
 import { ProtocolContextFactory } from "./test-factories.js";
 
 describe("progress-utils", () => {
@@ -69,7 +65,7 @@ describe("progress-utils", () => {
       },
     ];
 
-    expect(countProtocolProgressUnits(steps, memoryConfig)).toBe(412);
+    expect(countProtocolProgressUnits(steps, memoryConfig)).toBe(433);
   });
 
   it("advances progress against totalProgressUnits", () => {

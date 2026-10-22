@@ -33,6 +33,11 @@ export const KENWOOD_TH_F6_SETTINGS_BASE = 12800;
 export const KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET = 12927;
 export const KENWOOD_TH_F6_SETTINGS_LOADED_MAGIC = 0xa5;
 
+/**
+ * Logical byte offsets inside the settings segment. Append only: `mes` occupies 10–17,
+ * and 12927 is the loaded marker. Enum indexes and 0/1 flags match the TH-F6 protocol tables.
+ * `cnt` and `vxg` store the wire number itself.
+ */
 const SETTINGS_FIELD_OFFSETS = {
   apo: 0,
   bat: 1,
@@ -45,22 +50,84 @@ const SETTINGS_FIELD_OFFSETS = {
   vox: 8,
   cnt: 9,
   mes: 10,
+  bep: 18,
+  txs: 19,
+  elk: 20,
+  mrm: 21,
+  vxb: 22,
+  vxg: 23,
+  vxd: 24,
+  nar2m: 25,
+  nar125: 26,
+  nar70cm: 27,
+  mgl0: 28,
+  mgl1: 29,
+  mgl2: 30,
+  mgl3: 31,
+  mgl4: 32,
+  mgl5: 33,
+  mgl6: 34,
+  mgl7: 35,
+  tsp: 36,
+  txh: 37,
+  pt: 38,
+  dlk: 39,
+  ckey: 40,
+  th: 41,
+  nsft: 42,
+  ant: 43,
+  lan: 44,
+  datp: 45,
 } as const;
 
-const SETTINGS_COMMANDS = ["APO", "BAT", "SV", "BAL", "MNF", "SCR", "ATT", "ARO", "VOX", "CNT", "MES"] as const;
+const MES_LENGTH = 8;
+const MGL_OFFSET = SETTINGS_FIELD_OFFSETS.mgl0;
+const MGL_LENGTH = 8;
+const NAR_OFFSETS = [SETTINGS_FIELD_OFFSETS.nar2m, SETTINGS_FIELD_OFFSETS.nar125, SETTINGS_FIELD_OFFSETS.nar70cm] as const;
 
-export const KENWOOD_TH_F6_SETTINGS_COMMAND_COUNT = SETTINGS_COMMANDS.length;
+/**
+ * One CAT exchange per entry. `NAR` is three gets (`NAR 0` / `NAR 1` / `NAR 2`)
+ * because narrow FM is stored per ham band.
+ */
+const SETTINGS_EXCHANGES = [
+  "APO",
+  "BAT",
+  "SV",
+  "BAL",
+  "MNF",
+  "SCR",
+  "ATT",
+  "ARO",
+  "VOX",
+  "CNT",
+  "MES",
+  "BEP",
+  "TXS",
+  "ELK",
+  "MRM",
+  "VXB",
+  "VXG",
+  "VXD",
+  "NAR 0",
+  "NAR 1",
+  "NAR 2",
+  "MGL",
+  "TSP",
+  "TXH",
+  "PT",
+  "DLK",
+  "CKEY",
+  "TH",
+  "NSFT",
+  "ANT",
+  "LAN",
+  "DATP",
+] as const;
+
+export const KENWOOD_TH_F6_SETTINGS_COMMAND_COUNT = SETTINGS_EXCHANGES.length;
 
 /** NOAA Weather Radio channel frequencies (Hz), WX1–WX7. */
-export const NOAA_WEATHER_RADIO_FREQUENCIES_HZ = [
-  162_550_000,
-  162_400_000,
-  162_475_000,
-  162_425_000,
-  162_450_000,
-  162_500_000,
-  162_525_000,
-] as const;
+export const NOAA_WEATHER_RADIO_FREQUENCIES_HZ = [162_550_000, 162_400_000, 162_475_000, 162_425_000, 162_450_000, 162_500_000, 162_525_000] as const;
 
 const NAME_OFFSET = 24;
 const NAME_LENGTH = 8;
@@ -100,12 +167,7 @@ export const isKenwoodCatError = (line: string): boolean => {
 /**
  * Decode a CAT line (CR already stripped) as ASCII.
  */
-export const kenwoodCatLineFromBytes = (data: Uint8Array): string =>
-  Buffer.from(data)
-    .toString("ascii")
-    .replace(/\r/g, "")
-    .replace(/\n/g, "")
-    .trim();
+export const kenwoodCatLineFromBytes = (data: Uint8Array): string => Buffer.from(data).toString("ascii").replace(/\r/g, "").replace(/\n/g, "").trim();
 
 export const kenwoodMemoryReadCommand = (index: number): number[] => asciiCommand(`MR 0,${padIndex(index)}`);
 
@@ -143,8 +205,7 @@ export const kenwoodNameWriteCommand = (index: number, name: string): number[] =
   return asciiCommand(`MNA ${padIndex(index)},${trimmed}`);
 };
 
-export const kenwoodSplitWriteCommand = (index: number, transmitFrequency: number): number[] =>
-  asciiCommand(`MW 1,${padIndex(index)},${transmitFrequency.toString().padStart(11, "0")},0`);
+export const kenwoodSplitWriteCommand = (index: number, transmitFrequency: number): number[] => asciiCommand(`MW 1,${padIndex(index)},${transmitFrequency.toString().padStart(11, "0")},0`);
 
 const findFrequencyFieldIndex = (fields: string[]): number => fields.findIndex((field) => /^\d{9,11}$/.test(field.trim()));
 
@@ -212,8 +273,7 @@ export const parseKenwoodSplitTxLine = (line: string): number | undefined => {
   return spec?.freq;
 };
 
-export const emptyKenwoodThF6Record = (emptyByte = KENWOOD_TH_F6_EMPTY_BYTE): Uint8Array =>
-  new Uint8Array(KENWOOD_TH_F6_RECORD_SIZE).fill(emptyByte);
+export const emptyKenwoodThF6Record = (emptyByte = KENWOOD_TH_F6_EMPTY_BYTE): Uint8Array => new Uint8Array(KENWOOD_TH_F6_RECORD_SIZE).fill(emptyByte);
 
 /**
  * Pack a parsed CAT memory and name into the logical 32-byte TH-F6 channel image.
@@ -242,8 +302,7 @@ export const packKenwoodThF6Record = (spec: KenwoodThF6MemorySpec, name: string)
   return record;
 };
 
-export const isKenwoodThF6RecordEmpty = (record: Uint8Array, emptyByte = KENWOOD_TH_F6_EMPTY_BYTE): boolean =>
-  record.length === 0 || record[0] === emptyByte;
+export const isKenwoodThF6RecordEmpty = (record: Uint8Array, emptyByte = KENWOOD_TH_F6_EMPTY_BYTE): boolean => record.length === 0 || record[0] === emptyByte;
 
 /**
  * Unpack a logical 32-byte record for CAT write.
@@ -313,29 +372,125 @@ const parseSettingMesLine = (line: string): string | undefined => {
     return undefined;
   }
 
-  return trimmed
-    .slice(prefix.length)
-    .replace(/\0/g, "")
-    .trimEnd()
-    .slice(0, NAME_LENGTH);
+  return trimmed.slice(prefix.length).replace(/\0/g, "").trimEnd().slice(0, MES_LENGTH);
+};
+
+const settingCommandWord = (command: string): string => command.trim().split(/\s+/)[0]?.toUpperCase() ?? "";
+
+/**
+ * Memory group link is `MGL` plus one separator space plus eight characters.
+ * Position n is the digit `n` when that group is linked, otherwise a space.
+ * A trimmed reply drops trailing spaces; those positions are unlinked.
+ */
+const parseSettingMglLine = (line: string): string | undefined => {
+  if (isKenwoodCatError(line)) {
+    return undefined;
+  }
+
+  const trimmed = line.trim();
+
+  if (!trimmed.toUpperCase().startsWith("MGL")) {
+    return undefined;
+  }
+
+  let rest = trimmed.slice(3);
+
+  if (rest.startsWith(" ")) {
+    rest = rest.slice(1);
+  }
+
+  if (rest.length > MGL_LENGTH) {
+    return undefined;
+  }
+
+  const mask = rest.padEnd(MGL_LENGTH, " ");
+
+  for (let index = 0; index < MGL_LENGTH; index += 1) {
+    const character = mask[index];
+
+    if (character !== " " && character !== String(index)) {
+      return undefined;
+    }
+  }
+
+  return mask;
+};
+
+const parseSettingNarLine = (line: string): { band: number; value: number } | undefined => {
+  if (isKenwoodCatError(line)) {
+    return undefined;
+  }
+
+  const match = /^NAR\s+([0-2])\s*,\s*(\d+)$/i.exec(line.trim());
+
+  if (!match) {
+    return undefined;
+  }
+
+  const value = Number.parseInt(match[2] ?? "", 10);
+
+  if (!Number.isFinite(value) || (value !== 0 && value !== 1)) {
+    return undefined;
+  }
+
+  return { band: Number(match[1]), value };
+};
+
+const requestedNarBand = (command: string): number | undefined => {
+  const match = /^NAR\s+([0-2])$/i.exec(command.trim());
+  return match ? Number(match[1]) : undefined;
 };
 
 export const parseKenwoodSettingReadLine = (command: string, line: string): number | string | undefined => {
-  if (command === "MES") {
+  const word = settingCommandWord(command);
+
+  if (word === "MES") {
     return parseSettingMesLine(line);
   }
 
-  return parseSettingScalarLine(command, line);
+  if (word === "MGL") {
+    return parseSettingMglLine(line);
+  }
+
+  if (word === "NAR") {
+    const parsed = parseSettingNarLine(line);
+    const requested = requestedNarBand(command);
+
+    if (parsed === undefined || (requested !== undefined && requested !== parsed.band)) {
+      return undefined;
+    }
+
+    return parsed.value;
+  }
+
+  return parseSettingScalarLine(word, line);
 };
 
-export const kenwoodThF6SettingsLoaded = (buffer: Uint8Array): boolean =>
-  buffer.length > KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET &&
-  buffer[KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET] === KENWOOD_TH_F6_SETTINGS_LOADED_MAGIC;
+export const kenwoodThF6SettingsLoaded = (buffer: Uint8Array): boolean => buffer.length > KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET && buffer[KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET] === KENWOOD_TH_F6_SETTINGS_LOADED_MAGIC;
 
 const settingsAddress = (fieldOffset: number): number => KENWOOD_TH_F6_SETTINGS_BASE + fieldOffset;
 
+const writeMglMask = (buffer: Uint8Array): string => {
+  let mask = "";
+
+  for (let index = 0; index < MGL_LENGTH; index += 1) {
+    const linked = (buffer[settingsAddress(MGL_OFFSET + index)] ?? 0) !== 0;
+    mask += linked ? String(index) : " ";
+  }
+
+  return mask;
+};
+
+const applyMglMask = (buffer: Uint8Array, mask: string): void => {
+  for (let index = 0; index < MGL_LENGTH; index += 1) {
+    buffer[settingsAddress(MGL_OFFSET + index)] = mask[index] === String(index) ? 1 : 0;
+  }
+};
+
 export const applyKenwoodThF6SettingRead = (buffer: Uint8Array, command: string, line: string): boolean => {
-  if (command === "MES") {
+  const word = settingCommandWord(command);
+
+  if (word === "MES") {
     const message = parseSettingMesLine(line);
 
     if (message === undefined) {
@@ -343,26 +498,44 @@ export const applyKenwoodThF6SettingRead = (buffer: Uint8Array, command: string,
     }
 
     const offset = settingsAddress(SETTINGS_FIELD_OFFSETS.mes);
-    buffer.fill(0, offset, offset + NAME_LENGTH);
+    buffer.fill(0, offset, offset + MES_LENGTH);
     buffer.set(Buffer.from(message, "ascii"), offset);
     return true;
   }
 
-  const value = parseSettingScalarLine(command, line);
+  if (word === "MGL") {
+    const mask = parseSettingMglLine(line);
+
+    if (mask === undefined) {
+      return false;
+    }
+
+    applyMglMask(buffer, mask);
+    return true;
+  }
+
+  if (word === "NAR") {
+    const parsed = parseSettingNarLine(line);
+    const requested = requestedNarBand(command);
+
+    if (parsed === undefined || (requested !== undefined && requested !== parsed.band)) {
+      return false;
+    }
+
+    buffer[settingsAddress(NAR_OFFSETS[parsed.band])] = parsed.value;
+    return true;
+  }
+
+  const value = parseSettingScalarLine(word, line);
 
   if (value === undefined) {
     return false;
   }
 
-  const fieldKey = command.toLowerCase() as keyof typeof SETTINGS_FIELD_OFFSETS;
-
-  if (fieldKey === "mes") {
-    return false;
-  }
-
+  const fieldKey = word.toLowerCase() as keyof typeof SETTINGS_FIELD_OFFSETS;
   const fieldOffset = SETTINGS_FIELD_OFFSETS[fieldKey];
 
-  if (fieldOffset === undefined) {
+  if (fieldOffset === undefined || fieldKey === "mes") {
     return false;
   }
 
@@ -378,38 +551,45 @@ export const markKenwoodThF6SettingsLoaded = (buffer: Uint8Array, loaded: boolea
   buffer[KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET] = loaded ? KENWOOD_TH_F6_SETTINGS_LOADED_MAGIC : 0;
 };
 
+const formatSettingSetLine = (read: string, buffer: Uint8Array): string => {
+  const word = settingCommandWord(read);
+
+  if (word === "MES") {
+    const offset = settingsAddress(SETTINGS_FIELD_OFFSETS.mes);
+    const message = Buffer.from(buffer.subarray(offset, offset + MES_LENGTH))
+      .toString("ascii")
+      .replace(/\0/g, "")
+      .trimEnd()
+      .slice(0, MES_LENGTH);
+    return `MES ${message}`;
+  }
+
+  if (word === "MGL") {
+    return `MGL ${writeMglMask(buffer)}`;
+  }
+
+  if (word === "NAR") {
+    const band = requestedNarBand(read) ?? 0;
+    const value = buffer[settingsAddress(NAR_OFFSETS[band])] ?? 0;
+    return `NAR ${band},${value}`;
+  }
+
+  if (word === "CNT") {
+    const contrast = buffer[settingsAddress(SETTINGS_FIELD_OFFSETS.cnt)] ?? 0;
+    return `CNT ${contrast.toString().padStart(2, "0")}`;
+  }
+
+  const fieldKey = word.toLowerCase() as keyof typeof SETTINGS_FIELD_OFFSETS;
+  const value = buffer[settingsAddress(SETTINGS_FIELD_OFFSETS[fieldKey])] ?? 0;
+  return `${word} ${value}`;
+};
+
 export const kenwoodThF6SettingWriteCommands = (buffer: Uint8Array): number[][] => {
   if (!kenwoodThF6SettingsLoaded(buffer)) {
     return [];
   }
 
-  const commands: number[][] = [];
-
-  for (const command of SETTINGS_COMMANDS) {
-    if (command === "MES") {
-      const offset = settingsAddress(SETTINGS_FIELD_OFFSETS.mes);
-      const message = Buffer.from(buffer.subarray(offset, offset + NAME_LENGTH))
-        .toString("ascii")
-        .replace(/\0/g, "")
-        .trimEnd()
-        .slice(0, NAME_LENGTH);
-      commands.push(asciiCommand(`MES ${message}`));
-      continue;
-    }
-
-    if (command === "CNT") {
-      const contrast = buffer[settingsAddress(SETTINGS_FIELD_OFFSETS.cnt)] ?? 0;
-      commands.push(asciiCommand(`CNT ${contrast.toString().padStart(2, "0")}`));
-      continue;
-    }
-
-    const fieldKey = command.toLowerCase() as keyof typeof SETTINGS_FIELD_OFFSETS;
-    const fieldOffset = SETTINGS_FIELD_OFFSETS[fieldKey];
-    const value = buffer[settingsAddress(fieldOffset)] ?? 0;
-    commands.push(asciiCommand(`${command} ${value}`));
-  }
-
-  return commands;
+  return SETTINGS_EXCHANGES.map((read) => asciiCommand(formatSettingSetLine(read, buffer)));
 };
 
-export const kenwoodThF6SettingCommands = (): readonly string[] => SETTINGS_COMMANDS;
+export const kenwoodThF6SettingCommands = (): readonly string[] => SETTINGS_EXCHANGES;
