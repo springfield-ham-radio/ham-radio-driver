@@ -2,7 +2,8 @@ import type { ProtocolContext } from "../protocol-context.js";
 import type { RadioByteToken, RadioExpect, RadioExchange, RadioMemorySegment, RadioProtocolStep } from "@springfield/ham-radio-api";
 import { throwIfProtocolCancelled } from "../utils/cancel-guard.js";
 import { executeExchange, extractDataFromResponse } from "../utils/step-utils.js";
-import { inclusiveSegmentSize, isExpectBytes, isExpectUntil } from "../utils/token-utils.js";
+import { consumeResidueBytes, residueStartsWith } from "../utils/port-receive-residue.js";
+import { inclusiveSegmentSize, isExpectBytes, isExpectUntil, parseLiteralByte } from "../utils/token-utils.js";
 import { isReadStep } from "../utils/step-guards.js";
 import { advanceProgress } from "../utils/progress-utils.js";
 import { readLoopOptions, wait } from "../utils/write-chunks.js";
@@ -13,6 +14,35 @@ interface ReadResume {
 }
 
 const isAckTimeout = (error: unknown): boolean => error instanceof Error && error.message.startsWith("Timeout waiting for response");
+
+const readyByteValue = (ready: RadioByteToken): number | undefined => parseLiteralByte(ready);
+
+const consumeReadyFromResidue = (context: ProtocolContext, ready: RadioByteToken): boolean => {
+  const readyByte = readyByteValue(ready);
+
+  if (readyByte === undefined) {
+    return false;
+  }
+
+  if (!residueStartsWith(context, readyByte)) {
+    return false;
+  }
+
+  consumeResidueBytes(context, 1);
+  return true;
+};
+
+const shouldPrefixNextAfterAck = (context: ProtocolContext, ready?: RadioByteToken, ackExpectsReply?: boolean): boolean => {
+  if (ready === undefined) {
+    return false;
+  }
+
+  if (ackExpectsReply) {
+    return false;
+  }
+
+  return !consumeReadyFromResidue(context, ready);
+};
 
 const withReadyPrefix = (ready: RadioByteToken, expect: RadioExpect): RadioExpect => {
   if (isExpectBytes(expect) || isExpectUntil(expect)) {
@@ -126,7 +156,14 @@ export class ReadExecutor implements StepExecutor {
       params.context.currentSegment!.currentAddress = address;
       params.context.variables.set("chunkLength", thisChunk);
 
-      const frameExpect = params.readResume.prefixNext && params.ready !== undefined ? withReadyPrefix(params.ready, params.expect) : params.expect;
+      let frameExpect = params.expect;
+
+      if (params.readResume.prefixNext && params.ready !== undefined) {
+        if (!consumeReadyFromResidue(params.context, params.ready)) {
+          frameExpect = withReadyPrefix(params.ready, params.expect);
+        }
+      }
+
       params.readResume.prefixNext = false;
 
       await executeExchange({ expect: frameExpect, send: params.send, timeout: params.timeout }, params.context);
@@ -151,7 +188,7 @@ export class ReadExecutor implements StepExecutor {
           await executeExchange(params.ack, params.context);
           endSent = params.context.variables.get("lastSentData");
           endReceived = params.context.variables.get("lastReceivedData");
-          params.readResume.prefixNext = !ackExpectsReply && params.ready !== undefined;
+          params.readResume.prefixNext = shouldPrefixNextAfterAck(params.context, params.ready, ackExpectsReply);
         } catch (error) {
           if (ackExpectsReply && params.ready !== undefined && isAckTimeout(error)) {
             endSent = params.context.variables.get("lastSentData");

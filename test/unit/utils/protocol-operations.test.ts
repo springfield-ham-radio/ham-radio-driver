@@ -7,7 +7,6 @@ import { ProtocolContextFactory } from './test-factories.js';
 
 class TestProtocolOperation extends ProtocolOperationTemplate {
   public validateConfigurationCalled = false;
-  public setupParserCalled = false;
   public handleDataCalled = false;
   public handleErrorCalled = false;
   public sendDataCalled = false;
@@ -19,15 +18,6 @@ class TestProtocolOperation extends ProtocolOperationTemplate {
     }
   }
 
-  public setupParser(_config: any, _context: ProtocolContext): any {
-    this.setupParserCalled = true;
-    const parser = new EventEmitter();
-    setTimeout(() => {
-      parser.emit('data', Buffer.from([0x06, 0x01, 0x02, 0x03]));
-    }, 10);
-    return parser;
-  }
-
   public handleData(data: Buffer, _config: any, _context: ProtocolContext): Uint8Array {
     this.handleDataCalled = true;
     return new Uint8Array(data.slice(1));
@@ -37,8 +27,11 @@ class TestProtocolOperation extends ProtocolOperationTemplate {
     this.handleErrorCalled = true;
   }
 
-  public sendData(_config: any, _context: ProtocolContext): void {
+  public sendData(_config: any, context: ProtocolContext): void {
     this.sendDataCalled = true;
+    setTimeout(() => {
+      (context.port as EventEmitter).emit('data', Buffer.from([0x06, 0x01, 0x02, 0x03]));
+    }, 10);
   }
 }
 
@@ -66,11 +59,10 @@ describe('protocol-operations', () => {
 
     describe('execute()', () => {
       it('should execute successful operation', async () => {
-        const config = { test: true, timeout: 1000, expect: '0x06' };
+        const config = { test: true, timeout: 1000, expect: ['0x06', 0x01, 0x02, 0x03] };
         const result = await operation.execute(config as any, mockContext);
 
         expect(operation.validateConfigurationCalled).toBe(true);
-        expect(operation.setupParserCalled).toBe(true);
         expect(operation.handleDataCalled).toBe(true);
         expect(operation.sendDataCalled).toBe(true);
         expect(operation.handleErrorCalled).toBe(false);
@@ -88,7 +80,7 @@ describe('protocol-operations', () => {
           expect(error).toBeInstanceOf(CancelledException);
         }
         expect(operation.validateConfigurationCalled).toBe(true);
-        expect(operation.setupParserCalled).toBe(false);
+        expect(operation.sendDataCalled).toBe(false);
       });
 
       it('should throw error when configuration validation fails', async () => {
@@ -105,11 +97,7 @@ describe('protocol-operations', () => {
 
       it('should timeout when no response is received', async () => {
         const config = { test: true, timeout: 50, expect: '0x06' };
-
-        operation.setupParser = () => {
-          operation.setupParserCalled = true;
-          return new EventEmitter() as any;
-        };
+        operation.sendData = () => undefined;
 
         try {
           await operation.execute(config as any, mockContext);
@@ -126,7 +114,7 @@ describe('protocol-operations', () => {
 
     beforeEach(() => {
       operation = new SendReceiveOperation();
-      (mockContext.port as any).pipe = () => new EventEmitter();
+      (mockContext.port as any).write = () => true;
     });
 
     describe('validateConfiguration()', () => {
@@ -170,46 +158,24 @@ describe('protocol-operations', () => {
       });
     });
 
-    describe('parser lifecycle', () => {
-      it('should unpipe the parser after a successful exchange', async () => {
-        const piped: object[] = [];
-        const unpiped: object[] = [];
-
-        (mockContext.port as any).pipe = (destination: EventEmitter) => {
-          piped.push(destination);
-          setTimeout(() => {
-            destination.emit('data', Buffer.from([0x06]));
-          }, 5);
-          return destination;
-        };
-        (mockContext.port as any).unpipe = (destination: object) => {
-          unpiped.push(destination);
-        };
+    describe('fixed-length receive lifecycle', () => {
+      it('should complete a successful exchange via the port residue tap', async () => {
         (mockContext.port as any).write = () => true;
 
-        await operation.execute({ send: [0x06], expect: '0x06', timeout: 1000 }, mockContext);
+        const pending = operation.execute({ send: [0x06], expect: '0x06', timeout: 1000 }, mockContext);
+        setImmediate(() => {
+          mockPort.emit('data', Buffer.from([0x06]));
+        });
 
-        expect(piped).toHaveLength(1);
-        expect(unpiped).toEqual(piped);
+        await expect(pending).resolves.toEqual(new Uint8Array([0x06]));
       });
 
-      it('should unpipe the parser after a receive timeout', async () => {
-        const unpiped: object[] = [];
-
-        (mockContext.port as any).pipe = (destination: EventEmitter) => destination;
-        (mockContext.port as any).unpipe = (destination: object) => {
-          unpiped.push(destination);
-        };
+      it('should time out when the expected bytes never arrive', async () => {
         (mockContext.port as any).write = () => true;
 
-        try {
-          await operation.execute({ send: [0x06], expect: '0x06', timeout: 20 }, mockContext);
-          expect.fail('Should have timed out');
-        } catch (error) {
-          expect((error as Error).message).toContain('Timeout waiting for response');
-        }
-
-        expect(unpiped).toHaveLength(1);
+        await expect(operation.execute({ send: [0x06], expect: '0x06', timeout: 20 }, mockContext)).rejects.toThrow(
+          /Timeout waiting for response/,
+        );
       });
 
       it("reads until a CR delimiter and ignores line feeds", async () => {
@@ -225,13 +191,7 @@ describe('protocol-operations', () => {
         expect(Buffer.from(result).toString("ascii")).toBe("ID TH-F6A");
       });
 
-      it('unpipes the parser when send fails without waiting for the receive timeout', async () => {
-        const unpiped: object[] = [];
-
-        (mockContext.port as any).pipe = (destination: EventEmitter) => destination;
-        (mockContext.port as any).unpipe = (destination: object) => {
-          unpiped.push(destination);
-        };
+      it('cancels the fixed-length read when send fails without waiting for the receive timeout', async () => {
         (mockContext.port as any).write = function (_data: Uint8Array, callback?: (error?: Error | null) => void) {
           callback?.(new Error('port write failed'));
         };
@@ -243,7 +203,6 @@ describe('protocol-operations', () => {
         );
 
         expect(Date.now() - started).toBeLessThan(1000);
-        expect(unpiped).toHaveLength(1);
       });
 
       it('removes the delimiter listener when the read times out', async () => {

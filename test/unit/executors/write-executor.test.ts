@@ -8,20 +8,14 @@ import type { ProtocolContext } from "../../../src/protocol-context.js";
 class MockPort extends EventEmitter {
   public writes: Uint8Array[] = [];
 
-  write = (data: Uint8Array): boolean => {
+  write = (data: Uint8Array, callback?: (error?: Error | null) => void): boolean => {
     this.writes.push(Uint8Array.from(data));
+    setImmediate(() => {
+      this.emit("data", Buffer.from([0x06]));
+    });
+    callback?.(null);
     return true;
   };
-
-  pipe = (): EventEmitter => {
-    const parser = new EventEmitter();
-    setImmediate(() => {
-      parser.emit("data", Buffer.from([0x06]));
-    });
-    return parser;
-  };
-
-  unpipe = (): void => undefined;
 }
 
 describe("WriteExecutor", () => {

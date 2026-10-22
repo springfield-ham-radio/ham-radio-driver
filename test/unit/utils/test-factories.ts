@@ -24,10 +24,9 @@ export const ProtocolContextFactory = Factory.define<ProtocolContext>(() => ({
     },
   },
   variables: new Map(),
-  port: {
-    write: () => {},
-    pipe: () => new EventEmitter(),
-  } as any,
+  port: Object.assign(new EventEmitter(), {
+    write: () => true,
+  }) as ProtocolContext["port"],
   logger: {
     debug: () => {},
     info: () => {},

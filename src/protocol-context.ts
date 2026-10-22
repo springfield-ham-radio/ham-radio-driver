@@ -1,6 +1,7 @@
 import type { SerialPort } from "serialport";
 import type { RadioProgressIndicator, RadioMemoryConfig, RadioMemorySegment } from "@springfield/ham-radio-api";
 import type { UILogger } from "@springfield/ham-radio-utils";
+import type { PortReceiveState } from "./utils/port-receive-residue.js";
 
 /**
  * Protocol context for execution of radio communication protocols.
@@ -154,4 +155,10 @@ export interface ProtocolContext {
    * cleanup (for example Kenwood `E`) can be sent after the user cancels.
    */
   inCleanup?: boolean;
+
+  /**
+   * Residue from USB packet splits: bytes received while no fixed-length expect
+   * was active, or overflow past a completed frame.
+   */
+  portReceiveState?: PortReceiveState;
 }
