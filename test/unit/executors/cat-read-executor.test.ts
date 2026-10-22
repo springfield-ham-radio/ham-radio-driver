@@ -12,12 +12,67 @@ class MockCatPort extends EventEmitter {
 
     setImmediate(() => {
       if (text.startsWith("MR 0,000")) {
-        this.emit("data", Buffer.from("MR 0,000,00146520000,0,0,0,1,0,0,8,8,000,000000000,0,0\r"));
+        this.emit("data", Buffer.from("MR 0,000,00146520000,0,0,0,1,0,0,09,09,000,000000000,0,0\r"));
         return;
       }
 
       if (text.startsWith("MNA 000")) {
         this.emit("data", Buffer.from("MNA 000,CALL\r"));
+        return;
+      }
+
+      if (text === "APO\r") {
+        this.emit("data", Buffer.from("APO 1\r"));
+        return;
+      }
+
+      if (text === "BAT\r") {
+        this.emit("data", Buffer.from("BAT 0\r"));
+        return;
+      }
+
+      if (text === "SV\r") {
+        this.emit("data", Buffer.from("SV 5\r"));
+        return;
+      }
+
+      if (text === "BAL\r") {
+        this.emit("data", Buffer.from("BAL 0\r"));
+        return;
+      }
+
+      if (text === "MNF\r") {
+        this.emit("data", Buffer.from("MNF 0\r"));
+        return;
+      }
+
+      if (text === "SCR\r") {
+        this.emit("data", Buffer.from("SCR 0\r"));
+        return;
+      }
+
+      if (text === "ATT\r") {
+        this.emit("data", Buffer.from("ATT 0\r"));
+        return;
+      }
+
+      if (text === "ARO\r") {
+        this.emit("data", Buffer.from("ARO 1\r"));
+        return;
+      }
+
+      if (text === "VOX\r") {
+        this.emit("data", Buffer.from("VOX 0\r"));
+        return;
+      }
+
+      if (text === "CNT\r") {
+        this.emit("data", Buffer.from("CNT 08\r"));
+        return;
+      }
+
+      if (text === "MES\r") {
+        this.emit("data", Buffer.from("MES HELLO !!\r"));
         return;
       }
 
@@ -31,7 +86,7 @@ class MockCatPort extends EventEmitter {
 describe("CatReadExecutor", () => {
   it("packs occupied CAT memories and fills empty slots with 0xFF", async () => {
     const port = new MockCatPort();
-    const memoryBuffer = new Uint8Array(64).fill(0);
+    const memoryBuffer = new Uint8Array(13_000).fill(0);
     const context = ProtocolContextFactory.build({
       memoryBuffer,
       memoryConfig: {
@@ -40,11 +95,12 @@ describe("CatReadExecutor", () => {
         chunkSize: 32,
         segments: {
           channels: { endAddress: 63, startAddress: 0 },
+          settings: { endAddress: 12927, startAddress: 12800 },
         },
       },
       port: port as never,
       progressIndicator: { isCanceled: false, setValue: () => undefined },
-      totalProgressUnits: 2,
+      totalProgressUnits: 13,
       completedProgressUnits: 0,
     });
 
@@ -69,5 +125,11 @@ describe("CatReadExecutor", () => {
     expect(memoryBuffer[0]).not.toBe(255);
     expect(memoryBuffer[24]).toBe("C".charCodeAt(0));
     expect(memoryBuffer[32]).toBe(255);
+    expect(memoryBuffer[12800]).toBe(1);
+    expect(memoryBuffer[12802]).toBe(5);
+    expect(memoryBuffer[12807]).toBe(1);
+    expect(memoryBuffer[12809]).toBe(8);
+    expect(Buffer.from(memoryBuffer.subarray(12810, 12818)).toString("ascii").replace(/\0/g, "")).toBe("HELLO !!");
+    expect(memoryBuffer[12927]).toBe(0xa5);
   });
 });

@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import { EventEmitter } from "events";
 import { CatWriteExecutor } from "../../../src/executors/cat-write-executor.js";
 import { ProtocolContextFactory } from "../utils/test-factories.js";
-import { packKenwoodThF6Record } from "../../../src/utils/kenwood-th-f6-cat.js";
+import {
+  KENWOOD_TH_F6_SETTINGS_LOADED_MAGIC,
+  KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET,
+  packKenwoodThF6Record,
+} from "../../../src/utils/kenwood-th-f6-cat.js";
 
 const occupiedSpec = {
   freq: 146_520_000,
@@ -150,5 +154,66 @@ describe("CatWriteExecutor", () => {
     );
 
     expect(port.writes.some((write) => write.startsWith("MW 1,"))).toBe(true);
+  });
+
+  it("writes loaded TH-F6 settings after channels and skips settings when not loaded", async () => {
+    const port = new MockCatPort(() => "0");
+    const occupied = packKenwoodThF6Record(occupiedSpec, "CALL");
+    const memoryBuffer = new Uint8Array(13_000).fill(255);
+    memoryBuffer.set(occupied, 0);
+    memoryBuffer[12800] = 2;
+    memoryBuffer[12809] = 8;
+    memoryBuffer[KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET] = KENWOOD_TH_F6_SETTINGS_LOADED_MAGIC;
+
+    const executor = new CatWriteExecutor();
+    await executor.execute(
+      catWriteStep(1),
+      ProtocolContextFactory.build({
+        memoryBuffer,
+        memoryConfig: {
+          addressEndianness: "big",
+          addressSize: 2,
+          chunkSize: 32,
+          segments: {
+            channels: { endAddress: 31, startAddress: 0 },
+            settings: { endAddress: 12927, startAddress: 12800 },
+          },
+        },
+        port: port as never,
+        progressIndicator: { isCanceled: false, setValue: () => undefined },
+        totalProgressUnits: 12,
+        completedProgressUnits: 0,
+      }),
+    );
+
+    expect(port.writes).toContain("APO 2\r");
+    expect(port.writes).toContain("CNT 08\r");
+
+    const unloadedPort = new MockCatPort(() => "0");
+    const unloadedBuffer = new Uint8Array(13_000).fill(255);
+    unloadedBuffer.set(occupied, 0);
+    unloadedBuffer[12800] = 2;
+
+    await executor.execute(
+      catWriteStep(1),
+      ProtocolContextFactory.build({
+        memoryBuffer: unloadedBuffer,
+        memoryConfig: {
+          addressEndianness: "big",
+          addressSize: 2,
+          chunkSize: 32,
+          segments: {
+            channels: { endAddress: 31, startAddress: 0 },
+            settings: { endAddress: 12927, startAddress: 12800 },
+          },
+        },
+        port: unloadedPort as never,
+        progressIndicator: { isCanceled: false, setValue: () => undefined },
+        totalProgressUnits: 1,
+        completedProgressUnits: 0,
+      }),
+    );
+
+    expect(unloadedPort.writes.some((write) => write.startsWith("APO "))).toBe(false);
   });
 });

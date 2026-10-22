@@ -2,6 +2,10 @@ import type { RadioMemoryConfig, RadioProtocolStep } from "@springfield/ham-radi
 import type { ProtocolContext } from "../protocol-context.js";
 import { isCatReadStep, isCatWriteStep, isExchangeStep, isReadStep, isWriteStep } from "./step-guards.js";
 import { countWritableChunks, writeLoopOptions } from "./write-chunks.js";
+import { KENWOOD_TH_F6_SETTINGS_COMMAND_COUNT } from "./kenwood-th-f6-cat.js";
+
+const kenwoodThF6SettingsProgressUnits = (memoryConfig: RadioMemoryConfig): number =>
+  memoryConfig.segments.settings === undefined ? 0 : KENWOOD_TH_F6_SETTINGS_COMMAND_COUNT;
 
 /**
  * Count chunk round-trips for the named memory segments.
@@ -24,10 +28,12 @@ export function countProtocolProgressUnits(steps: RadioProtocolStep[], memoryCon
       return total + countWritableChunks(step.write.segments, memoryConfig, writeLoopOptions(step.write));
     }
     if (isCatReadStep(step)) {
-      return total + step.catRead.count;
+      const settingsUnits = step.catRead.pack === "kenwood-th-f6" ? kenwoodThF6SettingsProgressUnits(memoryConfig) : 0;
+      return total + step.catRead.count + settingsUnits;
     }
     if (isCatWriteStep(step)) {
-      return total + step.catWrite.count;
+      const settingsUnits = step.catWrite.pack === "kenwood-th-f6" ? kenwoodThF6SettingsProgressUnits(memoryConfig) : 0;
+      return total + step.catWrite.count + settingsUnits;
     }
     if (isExchangeStep(step)) {
       return total + 1;

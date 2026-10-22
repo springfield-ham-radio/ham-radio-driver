@@ -5,6 +5,8 @@ import { executeExchange } from "../utils/step-utils.js";
 import { isCatReadStep } from "../utils/step-guards.js";
 import { advanceProgress } from "../utils/progress-utils.js";
 import { catEmptyByte, catLineFromResponse, catTimeoutMs, delayMs, getCatPacker } from "../utils/cat-packers.js";
+import { KENWOOD_TH_F6_SETTINGS_COMMAND_COUNT } from "../utils/kenwood-th-f6-cat.js";
+import { readKenwoodThF6Settings } from "../utils/kenwood-th-f6-settings-io.js";
 import { StepExecutor } from "./base.js";
 
 const CAT_UNTIL_CR = { until: "0x0D" } as const;
@@ -72,6 +74,20 @@ export class CatReadExecutor implements StepExecutor {
       const record = packer.packRead(memoryLine, nameLine, splitLine, emptyByte);
       context.memoryBuffer.set(record, recordOffset);
       advanceProgress(context);
+    }
+
+    if (config.pack === "kenwood-th-f6") {
+      const settingsSegment = context.memoryConfig.segments.settings;
+
+      if (settingsSegment) {
+        await readKenwoodThF6Settings(context.memoryBuffer, settingsSegment, async (send) =>
+          this.exchangeLine(send, timeout, context, delay),
+        );
+
+        for (let index = 0; index < KENWOOD_TH_F6_SETTINGS_COMMAND_COUNT; index++) {
+          advanceProgress(context);
+        }
+      }
     }
   }
 
