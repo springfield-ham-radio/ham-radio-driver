@@ -1,3 +1,9 @@
+## [3.8.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.7.0...v3.8.0) (2026-10-22)
+
+### Features
+
+* **th-f6:** read and write the remaining menu settings ([#38](https://github.com/springfield-ham-radio/ham-radio-driver/issues/38)) ([84cfec9](https://github.com/springfield-ham-radio/ham-radio-driver/commit/84cfec94576f26fd6d6898ff7bdb96a5d92fad4a))
+
 ## [3.7.0](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.6.1...v3.7.0) (2026-10-22)
 
 ### Features
