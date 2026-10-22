@@ -1,4 +1,6 @@
 import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { beforeEach, describe, expect, it } from "vitest";
 import { EventEmitter } from "events";
 import type { RadioProtocolStep } from "@springfield/ham-radio-api";
@@ -6,7 +8,7 @@ import { ReadExecutor } from "../../../src/executors/read-executor.js";
 import { ProtocolContextFactory } from "../utils/test-factories.js";
 import type { ProtocolContext } from "../../../src/protocol-context.js";
 
-const thD74LogPath = "/home/ubuntu/.cursor/projects/workspace/uploads/kenwood-th-d74-import-serial-2026-10-21T23-51-24-227Z_33e2.json";
+const thD74LogPath = join(dirname(fileURLToPath(import.meta.url)), "../../fixtures/kenwood-th-d74-block-0x01ea-serial.json");
 
 class MockPort extends EventEmitter {
   public writes: Uint8Array[] = [];
@@ -231,10 +233,9 @@ describe("ReadExecutor", () => {
 
   it("(d) replays TH-D74 log entries 985-990 for block 0x01EA", async () => {
     const log = JSON.parse(readFileSync(thD74LogPath, "utf8")) as {
-      log: { entries: Array<{ direction: string; data: number[] }> };
+      entries: Array<{ direction: string; data: number[] }>;
     };
-    const entries = log.log.entries;
-    const blockEaFrame = Buffer.from(entries[989].data);
+    const blockEaFrame = Buffer.from(log.entries[2].data);
     const port = new ScriptedPort([blockEaFrame, Buffer.from([0x06])]);
     context.port = port as never;
     context.portReceiveState = undefined;
