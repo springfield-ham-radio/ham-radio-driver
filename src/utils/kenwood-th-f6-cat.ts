@@ -27,6 +27,30 @@ export const KENWOOD_TH_F6_INDEX_WIDTH = 3;
 export const KENWOOD_TH_F6_EMPTY_BYTE = 255;
 export const KENWOOD_CAT_CR = 0x0d;
 
+/** Logical settings block base address in the TH-F6 memory image. */
+export const KENWOOD_TH_F6_SETTINGS_BASE = 12800;
+/** Last byte of the settings segment; holds a loaded marker after a full CAT settings read. */
+export const KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET = 12927;
+export const KENWOOD_TH_F6_SETTINGS_LOADED_MAGIC = 0xa5;
+
+const SETTINGS_FIELD_OFFSETS = {
+  apo: 0,
+  bat: 1,
+  sv: 2,
+  bal: 3,
+  mnf: 4,
+  scr: 5,
+  att: 6,
+  aro: 7,
+  vox: 8,
+  cnt: 9,
+  mes: 10,
+} as const;
+
+const SETTINGS_COMMANDS = ["APO", "BAT", "SV", "BAL", "MNF", "SCR", "ATT", "ARO", "VOX", "CNT", "MES"] as const;
+
+export const KENWOOD_TH_F6_SETTINGS_COMMAND_COUNT = SETTINGS_COMMANDS.length;
+
 /** NOAA Weather Radio channel frequencies (Hz), WX1–WX7. */
 export const NOAA_WEATHER_RADIO_FREQUENCIES_HZ = [
   162_550_000,
@@ -51,6 +75,13 @@ const parseUnsigned = (value: string, radix: number): number => {
 };
 
 const clampByte = (value: number): number => Math.max(0, Math.min(255, value | 0));
+
+/**
+ * TH-F6 CAT uses 1-based CTCSS tone codes on the wire; the logical record stores 0-based ctcss-index bytes.
+ */
+export const kenwoodThF6CtcssWireFromIndex = (index: number): number => clampByte((index | 0) + 1);
+
+export const kenwoodThF6CtcssIndexFromWire = (wire: number): number => Math.max(0, clampByte(wire) - 1);
 
 const writeU32Le = (view: DataView, offset: number, value: number): void => {
   view.setUint32(offset, value >>> 0, true);
@@ -96,8 +127,8 @@ export const kenwoodMemoryWriteCommand = (index: number, spec?: KenwoodThF6Memor
     spec.ctcssMode.toString(),
     spec.dtcsMode.toString(),
     // TH-F6 live CAT rejects single-digit rtone/ctone fields (N); CHIRP uses %02i.
-    spec.rtone.toString().padStart(2, "0"),
-    spec.ctone.toString().padStart(2, "0"),
+    kenwoodThF6CtcssWireFromIndex(spec.rtone).toString().padStart(2, "0"),
+    kenwoodThF6CtcssWireFromIndex(spec.ctone).toString().padStart(2, "0"),
     spec.dtcsCode.toString().padStart(3, "0"),
     spec.offset.toString().padStart(9, "0"),
     spec.mode.toString(),
@@ -142,8 +173,8 @@ export const parseKenwoodMemoryReadLine = (line: string): KenwoodThF6MemorySpec 
     toneMode: clampByte(parseUnsigned(fields[freqIndex + 4] ?? "0", 10)),
     ctcssMode: clampByte(parseUnsigned(fields[freqIndex + 5] ?? "0", 10)),
     dtcsMode: clampByte(parseUnsigned(fields[freqIndex + 6] ?? "0", 10)),
-    rtone: clampByte(parseUnsigned(fields[freqIndex + 7] ?? "0", 10)),
-    ctone: clampByte(parseUnsigned(fields[freqIndex + 8] ?? "0", 10)),
+    rtone: kenwoodThF6CtcssIndexFromWire(parseUnsigned(fields[freqIndex + 7] ?? "0", 10)),
+    ctone: kenwoodThF6CtcssIndexFromWire(parseUnsigned(fields[freqIndex + 8] ?? "0", 10)),
     dtcsCode: clampByte(parseUnsigned(fields[freqIndex + 9] ?? "0", 10)),
     offset: parseUnsigned(fields[freqIndex + 10] ?? "0", 10),
     mode: clampByte(parseUnsigned(fields[freqIndex + 11] ?? "0", 10)),
@@ -245,3 +276,140 @@ export const unpackKenwoodThF6Record = (record: Uint8Array): { spec: KenwoodThF6
       .trimEnd(),
   };
 };
+
+export const kenwoodSettingReadCommand = (command: string): number[] => asciiCommand(command);
+
+const parseSettingScalarLine = (command: string, line: string): number | undefined => {
+  if (isKenwoodCatError(line)) {
+    return undefined;
+  }
+
+  const trimmed = line.trim();
+  const prefix = `${command} `;
+
+  if (!trimmed.toUpperCase().startsWith(prefix)) {
+    return undefined;
+  }
+
+  const valueText = trimmed.slice(prefix.length).trim();
+
+  if (valueText.length === 0) {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(valueText, 10);
+  return Number.isFinite(parsed) ? clampByte(parsed) : undefined;
+};
+
+const parseSettingMesLine = (line: string): string | undefined => {
+  if (isKenwoodCatError(line)) {
+    return undefined;
+  }
+
+  const trimmed = line.trim();
+  const prefix = "MES ";
+
+  if (!trimmed.toUpperCase().startsWith(prefix)) {
+    return undefined;
+  }
+
+  return trimmed
+    .slice(prefix.length)
+    .replace(/\0/g, "")
+    .trimEnd()
+    .slice(0, NAME_LENGTH);
+};
+
+export const parseKenwoodSettingReadLine = (command: string, line: string): number | string | undefined => {
+  if (command === "MES") {
+    return parseSettingMesLine(line);
+  }
+
+  return parseSettingScalarLine(command, line);
+};
+
+export const kenwoodThF6SettingsLoaded = (buffer: Uint8Array): boolean =>
+  buffer.length > KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET &&
+  buffer[KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET] === KENWOOD_TH_F6_SETTINGS_LOADED_MAGIC;
+
+const settingsAddress = (fieldOffset: number): number => KENWOOD_TH_F6_SETTINGS_BASE + fieldOffset;
+
+export const applyKenwoodThF6SettingRead = (buffer: Uint8Array, command: string, line: string): boolean => {
+  if (command === "MES") {
+    const message = parseSettingMesLine(line);
+
+    if (message === undefined) {
+      return false;
+    }
+
+    const offset = settingsAddress(SETTINGS_FIELD_OFFSETS.mes);
+    buffer.fill(0, offset, offset + NAME_LENGTH);
+    buffer.set(Buffer.from(message, "ascii"), offset);
+    return true;
+  }
+
+  const value = parseSettingScalarLine(command, line);
+
+  if (value === undefined) {
+    return false;
+  }
+
+  const fieldKey = command.toLowerCase() as keyof typeof SETTINGS_FIELD_OFFSETS;
+
+  if (fieldKey === "mes") {
+    return false;
+  }
+
+  const fieldOffset = SETTINGS_FIELD_OFFSETS[fieldKey];
+
+  if (fieldOffset === undefined) {
+    return false;
+  }
+
+  buffer[settingsAddress(fieldOffset)] = value;
+  return true;
+};
+
+export const markKenwoodThF6SettingsLoaded = (buffer: Uint8Array, loaded: boolean): void => {
+  if (buffer.length <= KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET) {
+    return;
+  }
+
+  buffer[KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET] = loaded ? KENWOOD_TH_F6_SETTINGS_LOADED_MAGIC : 0;
+};
+
+export const kenwoodThF6SettingWriteCommands = (buffer: Uint8Array): number[][] => {
+  if (!kenwoodThF6SettingsLoaded(buffer)) {
+    return [];
+  }
+
+  const commands: number[][] = [];
+
+  for (const command of SETTINGS_COMMANDS) {
+    if (command === "MES") {
+      const offset = settingsAddress(SETTINGS_FIELD_OFFSETS.mes);
+      const message = Buffer.from(buffer.subarray(offset, offset + NAME_LENGTH))
+        .toString("ascii")
+        .replace(/\0/g, "")
+        .trimEnd()
+        .slice(0, NAME_LENGTH);
+      commands.push(asciiCommand(`MES ${message}`));
+      continue;
+    }
+
+    if (command === "CNT") {
+      const contrast = buffer[settingsAddress(SETTINGS_FIELD_OFFSETS.cnt)] ?? 0;
+      commands.push(asciiCommand(`CNT ${contrast.toString().padStart(2, "0")}`));
+      continue;
+    }
+
+    const fieldKey = command.toLowerCase() as keyof typeof SETTINGS_FIELD_OFFSETS;
+    const fieldOffset = SETTINGS_FIELD_OFFSETS[fieldKey];
+    const value = buffer[settingsAddress(fieldOffset)] ?? 0;
+    commands.push(asciiCommand(`${command} ${value}`));
+  }
+
+  return commands;
+};
+
+export const kenwoodThF6SettingCommands = (): readonly string[] => SETTINGS_COMMANDS;

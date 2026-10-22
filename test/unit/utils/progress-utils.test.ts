@@ -69,7 +69,7 @@ describe("progress-utils", () => {
       },
     ];
 
-    expect(countProtocolProgressUnits(steps, memoryConfig)).toBe(401);
+    expect(countProtocolProgressUnits(steps, memoryConfig)).toBe(412);
   });
 
   it("advances progress against totalProgressUnits", () => {

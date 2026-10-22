@@ -5,7 +5,8 @@ import { executeExchange } from "../utils/step-utils.js";
 import { isCatWriteStep } from "../utils/step-guards.js";
 import { advanceProgress } from "../utils/progress-utils.js";
 import { catEmptyByte, catLineFromResponse, catTimeoutMs, delayMs, getCatPacker } from "../utils/cat-packers.js";
-import { isKenwoodCatError } from "../utils/kenwood-th-f6-cat.js";
+import { isKenwoodCatError, kenwoodThF6SettingWriteCommands, kenwoodThF6SettingsLoaded } from "../utils/kenwood-th-f6-cat.js";
+import { writeKenwoodThF6Settings } from "../utils/kenwood-th-f6-settings-io.js";
 import { StepExecutor } from "./base.js";
 
 interface CatWriteRejection {
@@ -101,6 +102,12 @@ export class CatWriteExecutor implements StepExecutor {
       const channels = [...new Set(rejections.map((rejection) => rejection.index))].sort((left, right) => left - right);
       const details = rejections.map((rejection) => `${rejection.index} (${rejection.command} replied ${rejection.reply || "empty"})`).join("; ");
       throw new Error(`Radio rejected channels ${channels.join(", ")}: ${details}`);
+    }
+
+    if (config.pack === "kenwood-th-f6" && context.memoryConfig.segments.settings && kenwoodThF6SettingsLoaded(context.memoryBuffer)) {
+      const settingsCommands = kenwoodThF6SettingWriteCommands(context.memoryBuffer);
+      await writeKenwoodThF6Settings(context.memoryBuffer, async (send) => this.exchangeLine(send, timeout, context, delay));
+      advanceProgress(context, settingsCommands.length);
     }
   }
 

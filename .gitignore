@@ -9,3 +9,4 @@ node_modules/
 dist/
 radio-driver-*.json
 
+radio-module-kenwood/

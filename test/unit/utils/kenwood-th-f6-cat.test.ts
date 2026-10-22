@@ -10,6 +10,15 @@ import {
   packKenwoodThF6Record,
   parseKenwoodMemoryReadLine,
   parseKenwoodNameLine,
+  parseKenwoodSettingReadLine,
+  applyKenwoodThF6SettingRead,
+  kenwoodThF6SettingWriteCommands,
+  kenwoodThF6SettingsLoaded,
+  markKenwoodThF6SettingsLoaded,
+  kenwoodThF6CtcssWireFromIndex,
+  kenwoodThF6CtcssIndexFromWire,
+  KENWOOD_TH_F6_SETTINGS_BASE,
+  KENWOOD_TH_F6_SETTINGS_MAGIC_OFFSET,
   unpackKenwoodThF6Record,
 } from "../../../src/utils/kenwood-th-f6-cat.js";
 
@@ -32,7 +41,7 @@ const hamBenchWeatherSpec = (freq: number) => ({
 
 describe("kenwood-th-f6-cat", () => {
   it("parses an MR reply with command echo into a simplex memory", () => {
-    const spec = parseKenwoodMemoryReadLine("MR 0,000,00146520000,0,0,0,1,0,0,8,8,000,000000000,0,0");
+    const spec = parseKenwoodMemoryReadLine("MR 0,000,00146520000,0,0,0,1,0,0,09,09,000,000000000,0,0");
 
     expect(spec).not.toBe(undefined);
     expect(spec?.freq).toBe(146_520_000);
@@ -59,7 +68,7 @@ describe("kenwood-th-f6-cat", () => {
   });
 
   it("parses MNA names and packs them into the logical record", () => {
-    const spec = parseKenwoodMemoryReadLine("MR 0,000,00146520000,0,0,0,1,0,0,8,8,000,000000000,0,0");
+    const spec = parseKenwoodMemoryReadLine("MR 0,000,00146520000,0,0,0,1,0,0,09,09,000,000000000,0,0");
     const name = parseKenwoodNameLine("MNA 000,CALL");
     const record = packKenwoodThF6Record(spec!, name);
 
@@ -100,14 +109,63 @@ describe("kenwood-th-f6-cat", () => {
     const simplex = hamBenchWeatherSpec(146_520_000);
     const simplexLine = Buffer.from(kenwoodMemoryWriteCommand(0, simplex)).toString("ascii").trim();
 
-    expect(simplexLine).toBe("MW 0,000,00146520000,0,0,0,0,0,0,00,00,000,000000000,0,0");
+    expect(simplexLine).toBe("MW 0,000,00146520000,0,0,0,0,0,0,01,01,000,000000000,0,0");
 
     for (const freq of NOAA_WEATHER_RADIO_FREQUENCIES_HZ) {
       const record = packKenwoodThF6Record(hamBenchWeatherSpec(freq), "WX");
       const { spec } = unpackKenwoodThF6Record(record);
       const line = Buffer.from(kenwoodMemoryWriteCommand(6, spec)).toString("ascii").trim();
 
-      expect(line).toBe(`MW 0,006,${freq.toString().padStart(11, "0")},0,0,0,0,0,0,00,00,000,000000000,0,0`);
+      expect(line).toBe(`MW 0,006,${freq.toString().padStart(11, "0")},0,0,0,0,0,0,01,01,000,000000000,0,0`);
     }
+  });
+
+  it("maps 1-based CAT CTCSS codes to 0-based record indexes (88.5 Hz is wire 09)", () => {
+    expect(kenwoodThF6CtcssIndexFromWire(9)).toBe(8);
+    expect(kenwoodThF6CtcssWireFromIndex(8)).toBe(9);
+
+    const spec = parseKenwoodMemoryReadLine("MR 0,000,00146520000,0,0,0,1,0,0,09,09,000,000000000,0,0");
+    expect(spec?.rtone).toBe(8);
+    expect(spec?.ctone).toBe(8);
+
+    const line = Buffer.from(kenwoodMemoryWriteCommand(0, spec!)).toString("ascii").trim();
+    expect(line).toContain(",09,09,");
+  });
+
+  it("keeps DCS wire codes as the record byte (index mapping unverified)", () => {
+    const spec = parseKenwoodMemoryReadLine("MR 0,000,00146520000,0,0,0,0,0,0,01,01,023,000000000,0,0");
+    expect(spec?.dtcsCode).toBe(23);
+  });
+
+  describe("settings CAT commands", () => {
+    const settingsBuffer = (): Uint8Array => new Uint8Array(13_000);
+
+    it("parses get replies into logical settings bytes", () => {
+      expect(parseKenwoodSettingReadLine("APO", "APO 1")).toBe(1);
+      expect(parseKenwoodSettingReadLine("CNT", "CNT 08")).toBe(8);
+      expect(parseKenwoodSettingReadLine("MES", "MES HELLO !!")).toBe("HELLO !!");
+      expect(parseKenwoodSettingReadLine("APO", "N")).toBe(undefined);
+    });
+
+    it("marks settings loaded only after all commands succeed", () => {
+      const buffer = settingsBuffer();
+      expect(applyKenwoodThF6SettingRead(buffer, "APO", "APO 2")).toBe(true);
+      expect(buffer[KENWOOD_TH_F6_SETTINGS_BASE]).toBe(2);
+      expect(kenwoodThF6SettingsLoaded(buffer)).toBe(false);
+      markKenwoodThF6SettingsLoaded(buffer, true);
+      expect(kenwoodThF6SettingsLoaded(buffer)).toBe(true);
+    });
+
+    it("builds set commands from a loaded settings image", () => {
+      const buffer = settingsBuffer();
+      applyKenwoodThF6SettingRead(buffer, "CNT", "CNT 08");
+      applyKenwoodThF6SettingRead(buffer, "MES", "MES HELLO !!");
+      markKenwoodThF6SettingsLoaded(buffer, true);
+
+      const lines = kenwoodThF6SettingWriteCommands(buffer).map((command) => Buffer.from(command).toString("ascii").trim());
+      expect(lines).toContain("CNT 08");
+      expect(lines).toContain("MES HELLO !!");
+      expect(kenwoodThF6SettingWriteCommands(new Uint8Array(13_000))).toEqual([]);
+    });
   });
 });
