@@ -4,7 +4,10 @@ Serial driver that executes HamBench protocol DSL steps: clone read/write, baud 
 
 Docs: [Protocol DSL](https://springfield-ham-radio.github.io/ham-radio-docs/developer/protocols/dsl.html) · [Architecture](https://springfield-ham-radio.github.io/ham-radio-docs/developer/architecture.html)
 
+Requires Node.js 26.13.0 ([`.nvmrc`](.nvmrc)). That release does not ship Corepack.
+
 ```bash
+npm install --global corepack@0.36.0
 corepack enable
 yarn install
 yarn build
