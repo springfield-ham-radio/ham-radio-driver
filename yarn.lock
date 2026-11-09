@@ -1525,23 +1525,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@springfield/ham-radio-api@npm:^18.0.2":
+"@springfield/ham-radio-api@npm:^18.3.0, @springfield/ham-radio-api@npm:^18.5.0":
   version: 18.5.0
   resolution: "@springfield/ham-radio-api@npm:18.5.0"
   dependencies:
     loglayer: "npm:^9.4.0"
     ts-brand: "npm:^0.2.0"
   checksum: 10c0/be78bc73f5fb76d9ce3582f18d9589d72db9b9d396a3234a659d96bec5773cc8bd04ab9309b6d54170139d80c80c0e2f660b2a100367e854c198cd8746d13ab9
-  languageName: node
-  linkType: hard
-
-"@springfield/ham-radio-api@npm:^18.3.0":
-  version: 18.3.0
-  resolution: "@springfield/ham-radio-api@npm:18.3.0"
-  dependencies:
-    loglayer: "npm:^9.4.0"
-    ts-brand: "npm:^0.2.0"
-  checksum: 10c0/2875c7162be0bd78d69d293106c97075cda21917d49f835e003896a53efdf817949c2613f2816e6439061e7ad2504e97e64ff072593d1a079a628c86c52ffbb9
   languageName: node
   linkType: hard
 
@@ -1555,8 +1545,8 @@ __metadata:
     "@semantic-release/git": "npm:11.0.1"
     "@semantic-release/github": "npm:12.0.10"
     "@semantic-release/npm": "npm:13.2.0"
-    "@springfield/ham-radio-api": "npm:^18.3.0"
-    "@springfield/ham-radio-utils": "npm:^4.17.0"
+    "@springfield/ham-radio-api": "npm:^18.5.0"
+    "@springfield/ham-radio-utils": "npm:^4.19.0"
     "@types/node": "npm:26.6.6"
     fishery: "npm:2.4.0"
     husky: "npm:9.1.7"
@@ -1571,11 +1561,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@springfield/ham-radio-utils@npm:^4.17.0":
-  version: 4.17.0
-  resolution: "@springfield/ham-radio-utils@npm:4.17.0"
+"@springfield/ham-radio-utils@npm:^4.19.0":
+  version: 4.19.0
+  resolution: "@springfield/ham-radio-utils@npm:4.19.0"
   dependencies:
-    "@springfield/ham-radio-api": "npm:^18.0.2"
+    "@springfield/ham-radio-api": "npm:^18.3.0"
     ajv: "npm:^8.20.0"
     ajv-formats: "npm:^3.0.1"
     fishery: "npm:^2.4.0"
@@ -1583,7 +1573,7 @@ __metadata:
     sprintf-js: "npm:^1.1.3"
   bin:
     ham-radio-pack-beta: dist/pack/pack-beta-cli.js
-  checksum: 10c0/9fa45facae49ee1af51cc50b3b5140aebeb1a0435bd58231737d168ab5d2a12d8a4922f7c33b536be657af964491319e50523a145c2d75f01dc08030da18d74c
+  checksum: 10c0/31964aca1b7108cb691891f1e1fd1cbdcb2d22ab0e8449ea17131141949e24a3cd957fd3e98572a8ba25d88842acea8f8274e67478bb88309ca9c24b1c7909cb
   languageName: node
   linkType: hard
 
