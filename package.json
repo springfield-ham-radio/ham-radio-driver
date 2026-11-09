@@ -46,12 +46,12 @@
     "@types/node": "26.6.6",
     "fishery": "2.4.0",
     "husky": "9.1.7",
-    "oxfmt": "^0.75.0",
-    "oxlint": "1.90.0",
+    "oxfmt": "^0.76.0",
+    "oxlint": "1.91.0",
     "semantic-release": "25.0.9",
     "typescript": "7.0.2",
-    "vite": "^8.3.5",
-    "vitest": "^5.0.5"
+    "vite": "^8.3.6",
+    "vitest": "^5.1.0"
   },
   "resolutions": {
     "conventional-changelog-conventionalcommits": "9.3.1"
