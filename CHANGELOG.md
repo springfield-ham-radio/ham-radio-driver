@@ -1,3 +1,11 @@
+## [3.8.2](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.8.1...v3.8.2) (2026-11-24)
+
+### Bug Fixes
+
+* **deps:** bump lodash-es from 4.17.21 to 4.18.1 ([#46](https://github.com/springfield-ham-radio/ham-radio-driver/issues/46)) ([9826ed5](https://github.com/springfield-ham-radio/ham-radio-driver/commit/9826ed5ac661fc9dc8e6cffd702b3c529d0fd3e0))
+* **deps:** bump the production-npm group with 2 updates ([#47](https://github.com/springfield-ham-radio/ham-radio-driver/issues/47)) ([aca1fb1](https://github.com/springfield-ham-radio/ham-radio-driver/commit/aca1fb12fb8338723411caad6ad7ae900e229ea8))
+* **release:** pin conventional-changelog-conventionalcommits to 10.4.1 ([#52](https://github.com/springfield-ham-radio/ham-radio-driver/issues/52)) ([123f4f4](https://github.com/springfield-ham-radio/ham-radio-driver/commit/123f4f4ea25929f6c74150bef2fca38fcc0abda2))
+
 ## [3.8.1](https://github.com/springfield-ham-radio/ham-radio-driver/compare/v3.8.0...v3.8.1) (2026-11-07)
 
 ### Bug Fixes
